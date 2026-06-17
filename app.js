@@ -12,7 +12,6 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     bindElements();
-    document.body.classList.add("scanlines");
     renderNavigation();
     renderModule();
     renderStatusBar();
@@ -36,16 +35,10 @@
     els.trapList = document.getElementById("trap-list");
     els.referenceCards = document.getElementById("reference-cards");
     els.resetButton = document.getElementById("reset-button");
-    els.scanlineToggle = document.getElementById("scanline-toggle");
   }
 
   function bindGlobalEvents() {
     els.resetButton.addEventListener("click", resetSimulation);
-    els.scanlineToggle.addEventListener("click", function () {
-      var enabled = document.body.classList.toggle("scanlines");
-      els.scanlineToggle.textContent = enabled ? "Scanlines On" : "Scanlines Off";
-      els.scanlineToggle.setAttribute("aria-pressed", String(enabled));
-    });
 
     els.hintButton.addEventListener("click", function () {
       var module = modules[activeModuleIndex];
