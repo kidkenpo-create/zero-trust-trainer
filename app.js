@@ -23,6 +23,7 @@
     els.moduleList = document.getElementById("module-list");
     els.moduleContent = document.getElementById("module-content");
     els.statusBar = document.getElementById("status-bar-content");
+    els.systemStrip = document.getElementById("system-strip-content");
     els.phaseIndicator = document.getElementById("phase-indicator");
     els.missionStatus = document.getElementById("mission-status");
     els.trustStatus = document.getElementById("trust-status");
@@ -87,7 +88,12 @@
       button.type = "button";
       button.className = "module-button";
       button.setAttribute("aria-current", index === activeModuleIndex ? "page" : "false");
-      button.innerHTML = '<span class="module-index">' + (index + 1) + '</span><span>' + escapeHtml(module.title) + "</span>";
+      button.innerHTML = [
+        '<span class="module-select-marker" aria-hidden="true"></span>',
+        '<span class="module-index">' + (index + 1) + "</span>",
+        '<span class="module-file"><span class="module-file-name">' + escapeHtml(module.title) + '</span><span class="module-file-path">/MISSION/REC-' + pad2(index + 1) + "</span></span>",
+        '<span class="module-code">' + (index === activeModuleIndex ? "ACTIVE" : getModuleCode(module, index)) + "</span>"
+      ].join("");
       button.addEventListener("click", function () {
         setActiveModule(index);
       });
@@ -197,6 +203,7 @@
       '<div class="subpanel-body">',
       '<p class="label">' + escapeHtml(module.commandHint) + "</p>",
       '<div class="terminal-row">',
+      '<span class="terminal-prompt" aria-hidden="true">ZT-DESK:\\MISSION&gt;</span>',
       '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command" placeholder="ENTER COMMAND" value="' + escapeHtml(savedUi.terminalDraft) + '">',
       '<button type="button" id="run-command" class="button secondary">Run</button>',
       "</div>",
@@ -221,7 +228,7 @@
         return;
       }
       var output = handleCommand(command);
-      var terminalText = "> " + command + "\n" + output;
+      var terminalText = "ZT-DESK:\\MISSION> " + command + "\n" + output;
       document.getElementById("terminal-output").textContent = terminalText;
       moduleUiState[activeModuleIndex].terminalOutput = terminalText;
       input.value = "";
@@ -585,6 +592,16 @@
       chip("PHASE", modules[activeModuleIndex].phaseLabel, ""),
       chip("MODE", mode, getModeClass() === "recovery" ? "alert" : "")
     ].join("");
+    if (els.systemStrip) {
+      els.systemStrip.textContent = [
+        mode + " MODE",
+        "PACS UNTRUSTED",
+        "TRUST " + state.trustAuthorityScore,
+        "H+" + state.elapsedHours,
+        "PHASE " + modules[activeModuleIndex].phaseLabel,
+        "LOCAL SIM"
+      ].join(" // ");
+    }
   }
 
   function resetSimulation() {
@@ -688,7 +705,7 @@
   }
 
   function metric(label, value) {
-    return '<div class="metric-card"><span class="label">' + escapeHtml(label) + '</span><span class="metric-value">' + escapeHtml(String(value)) + "</span></div>";
+    return '<div class="metric-card"><span class="readout-ticks" aria-hidden="true"></span><span class="label">' + escapeHtml(label) + '</span><span class="metric-value">' + escapeHtml(String(value)) + '</span><span class="readout-code">SYS RDY</span></div>';
   }
 
   function aarCard(label, value) {
@@ -709,6 +726,20 @@
     return terms.some(function (term) {
       return text.indexOf(term) >= 0;
     });
+  }
+
+  function getModuleCode(module, index) {
+    if (module.isAar) {
+      return "AAR";
+    }
+    if (module.isReference) {
+      return "LIB";
+    }
+    return index === 0 ? "SYS" : "PHASE";
+  }
+
+  function pad2(value) {
+    return String(value).padStart(2, "0");
   }
 
   function createModuleUiState() {
