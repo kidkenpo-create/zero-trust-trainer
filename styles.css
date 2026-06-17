@@ -989,13 +989,13 @@ body {
     linear-gradient(135deg, #010201 0%, #11140e 48%, #050705 100%);
 }
 
-/* CRT appliance shell: broad rounded bezel and inset phosphor screen. */
+/* CRT appliance shell: black casing with a thin muted-green screen rim. */
 body {
   padding: clamp(16px, 2.3vw, 34px);
   background:
-    radial-gradient(ellipse at center, rgba(53, 69, 41, 0.28), transparent 46%),
+    radial-gradient(ellipse at center, rgba(41, 55, 35, 0.18), transparent 46%),
     radial-gradient(ellipse at 50% 105%, rgba(0, 0, 0, 0.9), transparent 58%),
-    linear-gradient(135deg, #14160f, #050604 62%, #1b1b12);
+    linear-gradient(135deg, #080a07, #010201 62%, #090a07);
 }
 
 .workstation-frame {
@@ -1006,19 +1006,19 @@ body {
   border-width: clamp(22px, 3vw, 46px) clamp(34px, 5vw, 76px) clamp(34px, 5vw, 76px);
   border-radius: clamp(34px, 5vw, 76px) clamp(34px, 5vw, 76px) clamp(42px, 6vw, 96px) clamp(42px, 6vw, 96px);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.2), transparent 12%),
-    radial-gradient(ellipse at 18% 24%, rgba(210, 214, 176, 0.2), transparent 18%),
-    radial-gradient(ellipse at 82% 76%, rgba(0, 0, 0, 0.62), transparent 28%),
-    linear-gradient(180deg, #606348 0%, #3e422d 22%, #24271c 62%, #17190f 100%);
+    linear-gradient(145deg, rgba(125, 139, 105, 0.12), transparent 11%),
+    radial-gradient(ellipse at 18% 18%, rgba(95, 111, 80, 0.12), transparent 18%),
+    radial-gradient(ellipse at 82% 76%, rgba(0, 0, 0, 0.78), transparent 30%),
+    linear-gradient(180deg, #11150f 0%, #070906 34%, #020302 100%);
   background-clip: border-box;
   box-shadow:
-    0 0 0 3px #070806,
-    0 0 0 7px #222419,
+    0 0 0 3px #030403,
+    0 0 0 7px #141910,
     0 36px 90px rgba(0, 0, 0, 0.88),
-    inset 0 0 0 3px rgba(230, 226, 180, 0.15),
-    inset 0 0 0 10px rgba(0, 0, 0, 0.24),
-    inset 22px 24px 34px rgba(255, 255, 255, 0.09),
-    inset -28px -34px 48px rgba(0, 0, 0, 0.72);
+    inset 0 0 0 2px rgba(107, 121, 87, 0.22),
+    inset 0 0 0 8px rgba(0, 0, 0, 0.52),
+    inset 18px 20px 30px rgba(139, 153, 116, 0.045),
+    inset -28px -34px 48px rgba(0, 0, 0, 0.82);
   padding: clamp(8px, 1vw, 14px) clamp(14px, 1.7vw, 24px) clamp(14px, 1.7vw, 24px);
 }
 
@@ -1031,12 +1031,13 @@ body {
 
 .workstation-frame::before {
   inset: calc(clamp(8px, 1vw, 14px) - 1px) calc(clamp(14px, 1.7vw, 24px) - 1px) calc(clamp(14px, 1.7vw, 24px) - 1px);
-  border: 2px solid rgba(180, 191, 151, 0.26);
+  border: 2px solid rgba(113, 130, 91, 0.72);
   border-radius: clamp(18px, 3.5vw, 54px);
   box-shadow:
-    0 0 0 4px rgba(2, 3, 2, 0.72),
+    0 0 0 4px rgba(5, 8, 5, 0.92),
+    0 0 0 7px rgba(98, 112, 79, 0.3),
     inset 0 0 0 2px rgba(0, 0, 0, 0.82),
-    inset 0 0 42px rgba(126, 173, 107, 0.18);
+    inset 0 0 42px rgba(97, 140, 82, 0.16);
 }
 
 .workstation-frame::after {
