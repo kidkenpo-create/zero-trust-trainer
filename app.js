@@ -4,6 +4,7 @@
   var modules = window.ZTT_MODULES || [];
   var scenario = window.ZTT_SCENARIO || {};
   var state = clone(scenario.initialState);
+  var moduleUiState = createModuleUiState();
   var activeModuleIndex = 0;
 
   var els = {};
@@ -90,6 +91,7 @@
   }
 
   function setActiveModule(index) {
+    persistActiveModuleUiState();
     activeModuleIndex = index;
     state.currentPhase = index;
     renderNavigation();
@@ -117,6 +119,7 @@
   }
 
   function renderLesson(module) {
+    var savedUi = moduleUiState[activeModuleIndex];
     els.moduleContent.innerHTML = [
       '<div class="lesson-body">',
       renderModuleHeader(module),
@@ -125,7 +128,7 @@
       '<p>' + escapeHtml(module.prompt) + "</p>",
       '<div class="decision-workspace">',
       '<label for="learner-response" class="label">Learner Response</label>',
-      '<textarea id="learner-response" class="response-input" placeholder="Type your Zero Trust decision, SOP, or recovery criteria here..."></textarea>',
+      '<textarea id="learner-response" class="response-input" placeholder="Type your Zero Trust decision, SOP, or recovery criteria here...">' + escapeHtml(savedUi.responseDraft) + "</textarea>",
       '<button type="button" id="submit-decision" class="button">Submit Decision</button>',
       "</div></div></section>",
       '<section class="subpanel"><div class="subpanel-header">PHASE TRACKER</div><div class="subpanel-body">',
@@ -136,6 +139,10 @@
       renderConsole(module),
       "</div>"
     ].join("");
+
+    document.getElementById("learner-response").addEventListener("input", function (event) {
+      moduleUiState[activeModuleIndex].responseDraft = event.target.value;
+    });
 
     document.getElementById("submit-decision").addEventListener("click", function () {
       var input = document.getElementById("learner-response");
@@ -153,6 +160,7 @@
 
       var result = evaluateDecision(text);
       input.value = "";
+      moduleUiState[activeModuleIndex].responseDraft = "";
       renderFeedback(result);
       renderStatusBar();
       renderRightPanel(module);
@@ -173,17 +181,18 @@
   }
 
   function renderConsole(module) {
+    var savedUi = moduleUiState[activeModuleIndex];
     return [
       '<section class="subpanel">',
       '<div class="subpanel-header">COMMAND TERMINAL</div>',
       '<div class="subpanel-body">',
       '<p class="label">' + escapeHtml(module.commandHint) + "</p>",
       '<div class="terminal-row">',
-      '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command" placeholder="ENTER COMMAND">',
+      '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command" placeholder="ENTER COMMAND" value="' + escapeHtml(savedUi.terminalDraft) + '">',
       '<button type="button" id="run-command" class="button secondary">Run</button>',
       "</div>",
-      '<div id="terminal-output" class="terminal-output" aria-live="polite">SYSTEM READY. TYPE HELP FOR AVAILABLE COMMANDS.</div>',
-      '<div id="feedback-output" class="feedback-output" aria-live="polite">Decision feedback will appear here after submission.</div>',
+      '<div id="terminal-output" class="terminal-output" aria-live="polite">' + escapeHtml(savedUi.terminalOutput) + "</div>",
+      '<div id="feedback-output" class="feedback-output" aria-live="polite">' + savedUi.feedbackHtml + "</div>",
       "</div>",
       "</section>"
     ].join("");
@@ -193,14 +202,21 @@
     var input = document.getElementById("terminal-input");
     var run = document.getElementById("run-command");
 
+    input.addEventListener("input", function (event) {
+      moduleUiState[activeModuleIndex].terminalDraft = event.target.value;
+    });
+
     function execute() {
       var command = input.value.trim().toUpperCase();
       if (!command) {
         return;
       }
       var output = handleCommand(command);
-      document.getElementById("terminal-output").textContent = "> " + command + "\n" + output;
+      var terminalText = "> " + command + "\n" + output;
+      document.getElementById("terminal-output").textContent = terminalText;
+      moduleUiState[activeModuleIndex].terminalOutput = terminalText;
       input.value = "";
+      moduleUiState[activeModuleIndex].terminalDraft = "";
       renderStatusBar();
       renderRightPanel(modules[activeModuleIndex]);
     }
@@ -340,16 +356,18 @@
 
   function renderFeedback(result) {
     var output = document.getElementById("feedback-output");
+    var deltas = result.deltas || {};
     var html = [
       '<div class="feedback-card">',
       "<strong>" + escapeHtml(result.title) + "</strong>",
-      '<div class="score-line">' + renderDelta("Trust", result.deltas.trustAuthorityScore) + renderDelta("Fatigue", result.deltas.securityForcesFatigue) + renderDelta("Continuity", result.deltas.missionContinuityImpact) + renderDelta("Hours", result.deltas.elapsedHours) + "</div>",
+      '<div class="score-line">' + renderDelta("Trust", deltas.trustAuthorityScore || 0) + renderDelta("Fatigue", deltas.securityForcesFatigue || 0) + renderDelta("Continuity", deltas.missionContinuityImpact || 0) + renderDelta("Hours", deltas.elapsedHours || 0) + "</div>",
       "<span>Assessment: " + escapeHtml(result.assessment) + "</span>",
       "<span>Teaching point: " + escapeHtml(result.teachingPoint) + "</span>",
       "<span>Next consideration: " + escapeHtml(result.nextConsideration) + "</span>",
       "</div>"
     ].join("");
-    output.innerHTML = html + output.innerHTML;
+    moduleUiState[activeModuleIndex].feedbackHtml = html + moduleUiState[activeModuleIndex].feedbackHtml;
+    output.innerHTML = moduleUiState[activeModuleIndex].feedbackHtml;
   }
 
   function renderDelta(label, value) {
@@ -452,6 +470,7 @@
 
   function resetSimulation() {
     state = clone(scenario.initialState);
+    moduleUiState = createModuleUiState();
     activeModuleIndex = 0;
     renderNavigation();
     renderModule();
@@ -571,6 +590,41 @@
     return terms.some(function (term) {
       return text.indexOf(term) >= 0;
     });
+  }
+
+  function createModuleUiState() {
+    return modules.map(function () {
+      return {
+        responseDraft: "",
+        terminalDraft: "",
+        terminalOutput: "SYSTEM READY. TYPE HELP FOR AVAILABLE COMMANDS.",
+        feedbackHtml: "Decision feedback will appear here after submission."
+      };
+    });
+  }
+
+  function persistActiveModuleUiState() {
+    var savedUi = moduleUiState[activeModuleIndex];
+    var response = document.getElementById("learner-response");
+    var terminalInput = document.getElementById("terminal-input");
+    var terminalOutput = document.getElementById("terminal-output");
+    var feedbackOutput = document.getElementById("feedback-output");
+
+    if (!savedUi) {
+      return;
+    }
+    if (response) {
+      savedUi.responseDraft = response.value;
+    }
+    if (terminalInput) {
+      savedUi.terminalDraft = terminalInput.value;
+    }
+    if (terminalOutput) {
+      savedUi.terminalOutput = terminalOutput.textContent;
+    }
+    if (feedbackOutput) {
+      savedUi.feedbackHtml = feedbackOutput.innerHTML;
+    }
   }
 
   function clone(value) {
