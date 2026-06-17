@@ -331,17 +331,14 @@ h3 {
   box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.08), inset -1px -1px 0 rgba(0, 0, 0, 0.62);
 }
 
-.nav-actions,
-.shortcut-box {
-  margin: auto 0.8rem 0.8rem;
-}
-
 .nav-actions {
   display: grid;
   gap: 0.5rem;
+  margin: 0.45rem 0.8rem 0.8rem;
 }
 
 .shortcut-box {
+  margin: 0 0.8rem 0.8rem;
   border: 1px dashed var(--line-soft);
   border-radius: 0;
   padding: 0.65rem;
