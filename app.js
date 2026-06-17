@@ -459,12 +459,12 @@
     els.missionStatus.textContent = mode;
     els.missionStatus.className = "status-badge " + getModeClass();
     els.statusBar.innerHTML = [
-      chip("Trust Authority Score", state.trustAuthorityScore, ""),
-      chip("Security Forces Fatigue", state.securityForcesFatigue + "%", state.securityForcesFatigue > 65 ? "alert" : "warning"),
-      chip("Mission Continuity Impact", state.missionContinuityImpact + "%", state.missionContinuityImpact > 70 ? "alert" : ""),
-      chip("Elapsed Hours", "H+" + state.elapsedHours, state.elapsedHours >= 60 ? "alert" : ""),
-      chip("Current Phase", modules[activeModuleIndex].phaseLabel, ""),
-      chip("System Mode", mode, getModeClass() === "recovery" ? "alert" : "")
+      chip("TRUST", state.trustAuthorityScore, ""),
+      chip("SF FATIGUE", state.securityForcesFatigue + "%", state.securityForcesFatigue > 65 ? "alert" : "warning"),
+      chip("IMPACT", state.missionContinuityImpact + "%", state.missionContinuityImpact > 70 ? "alert" : ""),
+      chip("TIME", "H+" + state.elapsedHours, state.elapsedHours >= 60 ? "alert" : ""),
+      chip("PHASE", modules[activeModuleIndex].phaseLabel, ""),
+      chip("MODE", mode, getModeClass() === "recovery" ? "alert" : "")
     ].join("");
   }
 
