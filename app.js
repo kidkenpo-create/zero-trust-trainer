@@ -6,6 +6,7 @@
   var state = clone(scenario.initialState);
   var moduleUiState = createModuleUiState();
   var activeModuleIndex = 0;
+  var activeGuideTrigger = null;
 
   var els = {};
 
@@ -57,6 +58,10 @@
     });
 
     document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeGuidePanel();
+      }
+
       if (event.altKey) {
         var number = Number(event.key);
         if (number >= 1 && number <= modules.length) {
@@ -116,6 +121,7 @@
     }
 
     renderRightPanel(module);
+    bindGuideEvents(module);
   }
 
   function renderLesson(module) {
@@ -123,20 +129,22 @@
     els.moduleContent.innerHTML = [
       '<div class="lesson-body">',
       renderModuleHeader(module),
+      renderStarterPanel(module),
       '<div class="lesson-grid">',
-      '<section class="subpanel"><div class="subpanel-header">SCENARIO PROMPT</div><div class="subpanel-body">',
+      '<section class="subpanel"><div class="subpanel-header"><span>SCENARIO PROMPT</span>' + renderGuideButton(module, "prompt") + '</div><div class="subpanel-body">',
       '<p>' + escapeHtml(module.prompt) + "</p>",
       '<div class="decision-workspace">',
-      '<label for="learner-response" class="label">Learner Response</label>',
+      '<div class="field-label-row"><label for="learner-response" class="label">Learner Response</label>' + renderGuideButton(module, "response") + "</div>",
       '<textarea id="learner-response" class="response-input" placeholder="Type your Zero Trust decision, SOP, or recovery criteria here...">' + escapeHtml(savedUi.responseDraft) + "</textarea>",
       '<button type="button" id="submit-decision" class="button">Submit Decision</button>',
       "</div></div></section>",
-      '<section class="subpanel"><div class="subpanel-header">PHASE TRACKER</div><div class="subpanel-body">',
+      '<section class="subpanel"><div class="subpanel-header"><span>PHASE TRACKER</span>' + renderGuideButton(module, "tracker") + '</div><div class="subpanel-body">',
       renderProgressTracker(),
       renderMetricGrid(),
       "</div></section>",
       "</div>",
       renderConsole(module),
+      renderGuidePanel(module),
       "</div>"
     ].join("");
 
@@ -164,6 +172,7 @@
       renderFeedback(result);
       renderStatusBar();
       renderRightPanel(module);
+      bindGuideEvents(module);
       renderNavigation();
     });
 
@@ -174,8 +183,8 @@
     return [
       '<header class="module-header">',
       '<div class="module-title-row"><h2>' + escapeHtml(module.title) + '</h2><span class="status-badge ' + getModeClass() + '">' + getSystemMode() + "</span></div>",
-      '<p>' + escapeHtml(module.narrative) + "</p>",
-      '<div class="objective"><span class="label">Learning Objective</span>' + escapeHtml(module.objective) + "</div>",
+      '<div class="guided-copy-row"><p>' + escapeHtml(module.narrative) + "</p>" + renderGuideButton(module, "narrative") + "</div>",
+      '<div class="objective"><div class="field-label-row"><span class="label">Learning Objective</span>' + renderGuideButton(module, "objective") + '</div><p>' + escapeHtml(module.objective) + "</p></div>",
       "</header>"
     ].join("");
   }
@@ -184,7 +193,7 @@
     var savedUi = moduleUiState[activeModuleIndex];
     return [
       '<section class="subpanel">',
-      '<div class="subpanel-header">COMMAND TERMINAL</div>',
+      '<div class="subpanel-header"><span>COMMAND TERMINAL</span>' + renderGuideButton(module, "terminal") + "</div>",
       '<div class="subpanel-body">',
       '<p class="label">' + escapeHtml(module.commandHint) + "</p>",
       '<div class="terminal-row">',
@@ -219,6 +228,7 @@
       moduleUiState[activeModuleIndex].terminalDraft = "";
       renderStatusBar();
       renderRightPanel(modules[activeModuleIndex]);
+      bindGuideEvents(modules[activeModuleIndex]);
     }
 
     run.addEventListener("click", execute);
@@ -432,7 +442,7 @@
   }
 
   function renderRightPanel(module) {
-    els.trustStatus.innerHTML = scenario.trustVectors.map(function (vector) {
+    els.trustStatus.innerHTML = renderRightPanelGuide(module) + scenario.trustVectors.map(function (vector) {
       return '<div class="trust-row"><div></div><div><strong>' + escapeHtml(vector.label) + ": " + escapeHtml(vector.status) + "</strong><span>" + escapeHtml(vector.detail) + "</span></div></div>";
     }).join("");
 
@@ -452,6 +462,115 @@
     ].join("");
 
     els.trapList.innerHTML = scenario.traps.map(item).join("");
+  }
+
+  function renderStarterPanel(module) {
+    var guide = module.selfPacedGuide;
+
+    if (!guide) {
+      return "";
+    }
+
+    return [
+      '<section class="starter-panel" aria-labelledby="starter-title">',
+      '<div class="starter-panel-header"><div><span class="label">ASYNC TRAINING MODE</span><h3 id="starter-title">' + escapeHtml(guide.starterTitle) + "</h3></div>" + renderGuideButton(module, "prompt") + "</div>",
+      '<p>' + escapeHtml(guide.starterMode) + "</p>",
+      '<ol class="starter-steps">' + guide.starterSteps.map(item).join("") + "</ol>",
+      "</section>"
+    ].join("");
+  }
+
+  function renderGuideButton(module, sectionKey) {
+    var guide = module.selfPacedGuide;
+
+    if (!guide || !guide.sections[sectionKey]) {
+      return "";
+    }
+
+    return '<button type="button" class="guide-button" data-guide-key="' + escapeHtml(sectionKey) + '" aria-label="Open guidance for ' + escapeHtml(guide.sections[sectionKey].title) + '" aria-expanded="false">?</button>';
+  }
+
+  function renderGuidePanel(module) {
+    if (!module.selfPacedGuide) {
+      return "";
+    }
+
+    return [
+      '<aside id="guide-panel" class="guide-panel" role="dialog" aria-modal="false" aria-labelledby="guide-panel-title" aria-describedby="guide-panel-body" hidden>',
+      '<div class="guide-panel-titlebar"><span id="guide-panel-title">Operator Assistance</span><button type="button" id="guide-close" class="guide-close" aria-label="Close guidance">X</button></div>',
+      '<div id="guide-panel-body" class="guide-panel-body"></div>',
+      "</aside>"
+    ].join("");
+  }
+
+  function renderRightPanelGuide(module) {
+    if (!module.selfPacedGuide) {
+      return "";
+    }
+
+    return '<div class="right-panel-guide"><span class="label">Panel Assistance</span>' + renderGuideButton(module, "reference") + "</div>";
+  }
+
+  function bindGuideEvents(module) {
+    var buttons = document.querySelectorAll("[data-guide-key]");
+    var close = document.getElementById("guide-close");
+
+    buttons.forEach(function (button) {
+      button.onclick = function () {
+        openGuidePanel(module, button.getAttribute("data-guide-key"), button);
+      };
+    });
+
+    if (close) {
+      close.onclick = closeGuidePanel;
+    }
+  }
+
+  function openGuidePanel(module, sectionKey, trigger) {
+    var panel = document.getElementById("guide-panel");
+    var body = document.getElementById("guide-panel-body");
+    var guide = module.selfPacedGuide;
+    var section = guide && guide.sections[sectionKey];
+
+    if (!panel || !body || !section) {
+      return;
+    }
+
+    document.querySelectorAll("[data-guide-key]").forEach(function (button) {
+      button.setAttribute("aria-expanded", "false");
+    });
+    activeGuideTrigger = trigger;
+    trigger.setAttribute("aria-expanded", "true");
+    body.innerHTML = [
+      '<h3>' + escapeHtml(section.title) + "</h3>",
+      guideLine("Purpose", section.purpose),
+      guideLine("What to do", section.action),
+      guideLine("What good looks like", section.good),
+      guideLine("Common trap", section.trap)
+    ].join("");
+    panel.hidden = false;
+    document.getElementById("guide-close").focus();
+  }
+
+  function closeGuidePanel() {
+    var panel = document.getElementById("guide-panel");
+
+    if (!panel || panel.hidden) {
+      return;
+    }
+
+    panel.hidden = true;
+    document.querySelectorAll("[data-guide-key]").forEach(function (button) {
+      button.setAttribute("aria-expanded", "false");
+    });
+    if (activeGuideTrigger && document.contains(activeGuideTrigger)) {
+      activeGuideTrigger.focus();
+    }
+    activeGuideTrigger = null;
+  }
+
+  function guideLine(label, value) {
+    return '<div class="guide-line"><strong>' + escapeHtml(label) + '</strong><p>' + escapeHtml(value) + "</p></div>";
   }
 
   function renderStatusBar() {
