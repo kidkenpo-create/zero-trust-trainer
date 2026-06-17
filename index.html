@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Zero Trust Trainer OT tactical simulation console">
+    <title>Zero Trust Trainer: OT Tactical Simulation Console</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to lesson</a>
+    <div class="app-shell" id="app">
+      <nav class="nav-rail panel" aria-label="Training modules">
+        <div class="window-title">MISSION NAV</div>
+        <div class="brand-block">
+          <p class="eyebrow">OT Tactical Console</p>
+          <h1>ZERO TRUST TRAINER</h1>
+          <span class="status-badge" id="mission-status">TRAINING</span>
+        </div>
+        <div class="phase-card">
+          <span class="label">Current Phase</span>
+          <strong id="phase-indicator">Mission Brief</strong>
+        </div>
+        <div id="module-list" class="module-list"></div>
+        <div class="nav-actions">
+          <button type="button" id="reset-button" class="button danger">Reset Simulation</button>
+          <button type="button" id="scanline-toggle" class="button secondary" aria-pressed="true">Scanlines On</button>
+        </div>
+        <div class="shortcut-box">
+          <span class="label">Shortcuts</span>
+          <kbd>Alt</kbd> + <kbd>1-7</kbd> Modules
+          <br>
+          <kbd>Ctrl</kbd> + <kbd>Enter</kbd> Submit
+        </div>
+      </nav>
+
+      <main id="main-content" class="lesson panel" tabindex="-1">
+        <div class="window-title" id="module-window-title">LESSON VIEWPORT</div>
+        <div id="module-content"></div>
+      </main>
+
+      <aside class="reference-panel panel" aria-label="Contextual support">
+        <div class="window-title">REFERENCE / HINTS</div>
+        <section class="trust-stack" aria-labelledby="trust-status-heading">
+          <h2 id="trust-status-heading">Trust Status</h2>
+          <div id="trust-status"></div>
+        </section>
+        <section class="constraint-stack" aria-labelledby="constraints-heading">
+          <h2 id="constraints-heading">Key Constraints</h2>
+          <ul id="constraints-list"></ul>
+        </section>
+        <section class="hint-stack" aria-labelledby="hints-heading">
+          <div class="section-heading-row">
+            <h2 id="hints-heading">Support</h2>
+            <button type="button" id="hint-button" class="button small">Hint</button>
+          </div>
+          <p id="hint-output" class="hint-output">Hints are contextual and will not reveal a complete answer.</p>
+          <button type="button" id="instructor-toggle" class="button secondary small" aria-expanded="false">Instructor Notes</button>
+          <div id="instructor-notes" class="instructor-notes" hidden></div>
+        </section>
+        <section class="quality-stack" aria-labelledby="quality-heading">
+          <h2 id="quality-heading">Decision Quality</h2>
+          <div id="quality-indicators"></div>
+        </section>
+        <section class="trap-stack" aria-labelledby="traps-heading">
+          <h2 id="traps-heading">Common Failure Traps</h2>
+          <ul id="trap-list"></ul>
+        </section>
+        <section class="reference-cards" aria-labelledby="cards-heading">
+          <h2 id="cards-heading">Reference Cards</h2>
+          <div id="reference-cards"></div>
+        </section>
+      </aside>
+
+      <footer class="status-bar" aria-label="Mission status metrics">
+        <div id="status-bar-content"></div>
+      </footer>
+    </div>
+
+    <script src="data/scenario.js"></script>
+    <script src="data/modules.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
