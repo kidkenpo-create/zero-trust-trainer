@@ -519,6 +519,12 @@
 
     buttons.forEach(function (button) {
       button.onclick = function () {
+        var panel = document.getElementById("guide-panel");
+        if (panel && !panel.hidden && activeGuideTrigger === button) {
+          closeGuidePanel(false);
+          return;
+        }
+
         openGuidePanel(module, button.getAttribute("data-guide-key"), button);
       };
     });
@@ -551,10 +557,9 @@
       guideLine("Common trap", section.trap)
     ].join("");
     panel.hidden = false;
-    document.getElementById("guide-close").focus();
   }
 
-  function closeGuidePanel() {
+  function closeGuidePanel(returnFocus) {
     var panel = document.getElementById("guide-panel");
 
     if (!panel || panel.hidden) {
@@ -565,7 +570,7 @@
     document.querySelectorAll("[data-guide-key]").forEach(function (button) {
       button.setAttribute("aria-expanded", "false");
     });
-    if (activeGuideTrigger && document.contains(activeGuideTrigger)) {
+    if (returnFocus !== false && activeGuideTrigger && document.contains(activeGuideTrigger)) {
       activeGuideTrigger.focus();
     }
     activeGuideTrigger = null;
