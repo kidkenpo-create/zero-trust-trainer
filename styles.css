@@ -101,6 +101,10 @@ a:focus-visible {
   grid-column: 2 / -1;
 }
 
+.reference-panel-hidden {
+  display: none !important;
+}
+
 .panel {
   min-width: 0;
   border: 1px solid var(--line-dark);
@@ -1443,6 +1447,14 @@ body {
     grid-template-columns: 220px minmax(0, 1fr);
   }
 
+  .app-shell.reference-collapsed {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .app-shell.reference-collapsed .lesson {
+    grid-column: 2 / -1;
+  }
+
   .reference-panel {
     grid-column: 1 / -1;
     display: grid;
@@ -1478,6 +1490,14 @@ body {
   .app-shell,
   .lesson-grid {
     grid-template-columns: 1fr;
+  }
+
+  .app-shell.reference-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.reference-collapsed .lesson {
+    grid-column: 1 / -1;
   }
 
   .system-strip {

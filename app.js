@@ -81,6 +81,7 @@
   function toggleReferencePanel() {
     var collapsed = els.appShell.classList.toggle("reference-collapsed");
     els.referencePanel.hidden = collapsed;
+    els.referencePanel.classList.toggle("reference-panel-hidden", collapsed);
     els.referenceToggle.setAttribute("aria-expanded", String(!collapsed));
     els.referenceToggle.textContent = collapsed ? "Show Reference" : "Hide Reference";
   }
