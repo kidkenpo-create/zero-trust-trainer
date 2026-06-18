@@ -93,6 +93,14 @@ a:focus-visible {
   padding: 8px;
 }
 
+.app-shell.reference-collapsed {
+  grid-template-columns: minmax(230px, 280px) minmax(520px, 1fr);
+}
+
+.app-shell.reference-collapsed .lesson {
+  grid-column: 2 / -1;
+}
+
 .panel {
   min-width: 0;
   border: 1px solid var(--line-dark);
@@ -357,6 +365,52 @@ h3 {
   align-items: start;
 }
 
+.lesson-disclosure {
+  border: 1px solid var(--line-soft);
+  background: #0b140e;
+}
+
+.lesson-disclosure + .lesson-disclosure {
+  margin-top: 0.25rem;
+}
+
+.lesson-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+  color: var(--text);
+  background: #101a12;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.lesson-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.lesson-disclosure summary span::before {
+  color: var(--amber);
+  content: ">";
+}
+
+.lesson-disclosure[open] summary span::before {
+  content: "v";
+}
+
+.lesson-disclosure summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.lesson-disclosure-body {
+  padding: 0.75rem;
+}
+
 .module-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -374,13 +428,7 @@ h3 {
 .objective {
   display: grid;
   gap: 0.45rem;
-  border: 1px solid var(--line-soft);
-  border-left: 3px solid var(--cyan);
-  padding: 0.65rem 0.8rem;
   color: var(--text);
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px, transparent 1px, transparent 8px),
-    rgba(158, 184, 181, 0.06);
 }
 
 .objective .label {
@@ -1081,6 +1129,23 @@ body {
   background: var(--amber);
 }
 
+.reference-toggle {
+  border: 1px solid #435244;
+  border-radius: 0;
+  padding: 0.18rem 0.45rem;
+  color: var(--text);
+  background: #202b20;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.reference-toggle:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
 .system-strip-content {
   overflow: hidden;
   color: #b9c9ad;
@@ -1419,8 +1484,9 @@ body {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .system-strip-leds {
-    display: none;
+  .reference-toggle {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .panel {

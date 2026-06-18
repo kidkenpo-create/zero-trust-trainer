@@ -18,7 +18,7 @@
         <header class="system-strip" aria-label="Workstation status">
           <div class="system-strip-brand">ZT-DESK OS</div>
           <div id="system-strip-content" class="system-strip-content">TRAINING MODE // PACS UNTRUSTED // H+0 // LOCAL SIM</div>
-          <div class="system-strip-leds" aria-hidden="true"><span></span><span></span><span></span></div>
+          <button type="button" id="reference-toggle" class="reference-toggle" aria-controls="reference-panel" aria-expanded="true">Hide Reference</button>
         </header>
 
         <nav class="nav-rail panel" aria-label="Training modules">
@@ -43,7 +43,7 @@
           <div id="module-content"></div>
         </main>
 
-        <aside class="reference-panel panel" aria-label="Contextual support">
+        <aside id="reference-panel" class="reference-panel panel" aria-label="Contextual support">
           <div class="window-title">REFERENCE / HINTS</div>
           <section class="trust-stack" aria-labelledby="trust-status-heading">
             <h2 id="trust-status-heading">Trust Status</h2>

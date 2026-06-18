@@ -35,10 +35,14 @@
     els.trapList = document.getElementById("trap-list");
     els.referenceCards = document.getElementById("reference-cards");
     els.resetButton = document.getElementById("reset-button");
+    els.appShell = document.getElementById("app");
+    els.referencePanel = document.getElementById("reference-panel");
+    els.referenceToggle = document.getElementById("reference-toggle");
   }
 
   function bindGlobalEvents() {
     els.resetButton.addEventListener("click", resetSimulation);
+    els.referenceToggle.addEventListener("click", toggleReferencePanel);
 
     els.hintButton.addEventListener("click", function () {
       var module = modules[activeModuleIndex];
@@ -72,6 +76,13 @@
         }
       }
     });
+  }
+
+  function toggleReferencePanel() {
+    var collapsed = els.appShell.classList.toggle("reference-collapsed");
+    els.referencePanel.hidden = collapsed;
+    els.referenceToggle.setAttribute("aria-expanded", String(!collapsed));
+    els.referenceToggle.textContent = collapsed ? "Show Reference" : "Hide Reference";
   }
 
   function renderNavigation() {
@@ -183,8 +194,8 @@
     return [
       '<header class="module-header">',
       '<div class="module-title-row"><h2>' + escapeHtml(module.title) + '</h2><span class="status-badge ' + getModeClass() + '">' + getSystemMode() + "</span></div>",
-      '<div class="guided-copy-row"><p>' + escapeHtml(module.narrative) + "</p>" + renderGuideButton(module, "narrative") + "</div>",
-      '<div class="objective"><div class="field-label-row"><span class="label">Learning Objective</span>' + renderGuideButton(module, "objective") + '</div><p>' + escapeHtml(module.objective) + "</p></div>",
+      renderDisclosure("Mission Assistance", '<div class="guided-copy-row"><p>' + escapeHtml(module.narrative) + "</p>" + renderGuideButton(module, "narrative") + "</div>", false),
+      renderDisclosure("Learning Objective", '<div class="field-label-row"><span class="label">Learning Objective</span>' + renderGuideButton(module, "objective") + '</div><p>' + escapeHtml(module.objective) + "</p>", false, "objective"),
       "</header>"
     ].join("");
   }
@@ -472,13 +483,15 @@
       return "";
     }
 
-    return [
-      '<section class="starter-panel" aria-labelledby="starter-title">',
+    return renderDisclosure("Async Training Mode", [
       '<div class="starter-panel-header"><div><span class="label">ASYNC TRAINING MODE</span><h3 id="starter-title">' + escapeHtml(guide.starterTitle) + "</h3></div>" + renderGuideButton(module, "prompt") + "</div>",
       '<p>' + escapeHtml(guide.starterMode) + "</p>",
-      '<ol class="starter-steps">' + guide.starterSteps.map(item).join("") + "</ol>",
-      "</section>"
-    ].join("");
+      '<ol class="starter-steps">' + guide.starterSteps.map(item).join("") + "</ol>"
+    ].join(""), false, "starter-panel");
+  }
+
+  function renderDisclosure(title, content, open, extraClass) {
+    return '<details class="lesson-disclosure ' + escapeHtml(extraClass || "") + '"' + (open ? " open" : "") + "><summary>" + escapeHtml(title) + '<span aria-hidden="true"></span></summary><div class="lesson-disclosure-body">' + content + "</div></details>";
   }
 
   function renderGuideButton(module, sectionKey) {
