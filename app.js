@@ -105,6 +105,8 @@
 
   function renderModule() {
     var module = modules[activeModuleIndex];
+    closeGuidePanel();
+
     els.phaseIndicator.textContent = module.phaseLabel;
     els.hintOutput.textContent = "Hints are contextual and will not reveal a complete answer.";
     els.instructorNotes.textContent = module.instructorNotes;
@@ -143,7 +145,6 @@
       "</div></section>",
       "</div>",
       renderConsole(module),
-      renderGuidePanel(module),
       "</div>"
     ].join("");
 
@@ -488,19 +489,6 @@
     }
 
     return '<button type="button" class="guide-button" data-guide-key="' + escapeHtml(sectionKey) + '" aria-label="Open guidance for ' + escapeHtml(guide.sections[sectionKey].title) + '" aria-expanded="false">?</button>';
-  }
-
-  function renderGuidePanel(module) {
-    if (!module.selfPacedGuide) {
-      return "";
-    }
-
-    return [
-      '<aside id="guide-panel" class="guide-panel" role="dialog" aria-modal="false" aria-labelledby="guide-panel-title" aria-describedby="guide-panel-body" hidden>',
-      '<div class="guide-panel-titlebar"><span id="guide-panel-title">Operator Assistance</span><button type="button" id="guide-close" class="guide-close" aria-label="Close guidance">X</button></div>',
-      '<div id="guide-panel-body" class="guide-panel-body"></div>',
-      "</aside>"
-    ].join("");
   }
 
   function renderRightPanelGuide(module) {

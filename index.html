@@ -36,12 +36,6 @@
           <div class="nav-actions">
             <button type="button" id="reset-button" class="button danger">Reset Simulation</button>
           </div>
-          <div class="shortcut-box">
-            <span class="label">Shortcuts</span>
-            <kbd>Alt</kbd> + <kbd>1-7</kbd> Modules
-            <br>
-            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> Submit
-          </div>
         </nav>
 
         <main id="main-content" class="lesson panel" tabindex="-1">
@@ -68,18 +62,21 @@
             <button type="button" id="instructor-toggle" class="button secondary small" aria-expanded="false">Instructor Notes</button>
             <div id="instructor-notes" class="instructor-notes" hidden></div>
           </section>
-          <section class="quality-stack" aria-labelledby="quality-heading">
-            <h2 id="quality-heading">Decision Quality</h2>
-            <div id="quality-indicators"></div>
-          </section>
-          <section class="trap-stack" aria-labelledby="traps-heading">
-            <h2 id="traps-heading">Common Failure Traps</h2>
-            <ul id="trap-list"></ul>
-          </section>
-          <section class="reference-cards" aria-labelledby="cards-heading">
-            <h2 id="cards-heading">Reference Cards</h2>
-            <div id="reference-cards"></div>
-          </section>
+          <details class="training-aids">
+            <summary>Training Aids</summary>
+            <section class="quality-stack" aria-labelledby="quality-heading">
+              <h2 id="quality-heading">Decision Quality</h2>
+              <div id="quality-indicators"></div>
+            </section>
+            <section class="trap-stack" aria-labelledby="traps-heading">
+              <h2 id="traps-heading">Common Failure Traps</h2>
+              <ul id="trap-list"></ul>
+            </section>
+            <section class="reference-cards" aria-labelledby="cards-heading">
+              <h2 id="cards-heading">Reference Cards</h2>
+              <div id="reference-cards"></div>
+            </section>
+          </details>
         </aside>
 
         <footer class="status-bar" aria-label="Mission status metrics">
@@ -87,6 +84,10 @@
         </footer>
       </div>
     </div>
+    <aside id="guide-panel" class="guide-panel" role="dialog" aria-modal="false" aria-labelledby="guide-panel-title" aria-describedby="guide-panel-body" hidden>
+      <div class="guide-panel-titlebar"><span id="guide-panel-title">Operator Assistance</span><button type="button" id="guide-close" class="guide-close" aria-label="Close guidance">X</button></div>
+      <div id="guide-panel-body" class="guide-panel-body"></div>
+    </aside>
 
     <script src="data/scenario.js"></script>
     <script src="data/modules.js"></script>
