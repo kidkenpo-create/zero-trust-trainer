@@ -6,6 +6,8 @@ Zero Trust Trainer: OT Tactical Simulation Console is a standalone classroom and
 
 Open `index.html` directly in a browser. The app uses standard script tags and global data objects so it does not require a local server, build tools, npm packages, a backend, or an internet connection.
 
+When opened locally, learner submissions use the built-in local rubric. In Vercel, the optional `/api/grade` serverless endpoint can provide AI rubric feedback when both `OPENAI_API_KEY` and `OPENAI_MODEL` are configured as Vercel environment variables.
+
 ## Project Structure
 
 ```text

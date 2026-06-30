@@ -164,12 +164,14 @@
       moduleUiState[activeModuleIndex].responseDraft = event.target.value;
     });
 
-    document.getElementById("submit-decision").addEventListener("click", function () {
+    document.getElementById("submit-decision").addEventListener("click", async function () {
       var input = document.getElementById("learner-response");
+      var submit = document.getElementById("submit-decision");
       var text = input.value.trim();
       if (!text) {
         renderFeedback({
           title: "NO DECISION ENTERED",
+          source: "LOCAL RUBRIC",
           assessment: "The console requires an explicit action, assumption, or protocol.",
           teachingPoint: "Zero Trust depends on observable decisions, not implied intent.",
           nextConsideration: "State what you trust, what you do not trust, and what evidence changes that posture.",
@@ -178,14 +180,21 @@
         return;
       }
 
-      var result = evaluateDecision(text);
-      input.value = "";
-      moduleUiState[activeModuleIndex].responseDraft = "";
-      renderFeedback(result);
-      renderStatusBar();
-      renderRightPanel(module);
-      bindGuideEvents(module);
-      renderNavigation();
+      submit.disabled = true;
+      submit.textContent = "Evaluating...";
+      try {
+        var result = await gradeDecision(text, module);
+        input.value = "";
+        moduleUiState[activeModuleIndex].responseDraft = "";
+        renderFeedback(result);
+        renderStatusBar();
+        renderRightPanel(module);
+        bindGuideEvents(module);
+        renderNavigation();
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Submit Decision";
+      }
     });
 
     bindTerminal();
@@ -288,6 +297,7 @@
     var strong = positives >= 2 && !risky;
     var result = {
       title: strong ? "STRONG ZERO TRUST DECISION" : risky ? "RISKY ASSUMPTION DETECTED" : "PARTIAL DECISION ACCEPTED",
+      source: "LOCAL RUBRIC",
       assessment: buildAssessment(positives, negatives),
       teachingPoint: buildTeachingPoint(lower, risky),
       nextConsideration: buildNextConsideration(),
@@ -299,6 +309,110 @@
 
     updateState(deltas, result);
     return result;
+  }
+
+  async function gradeDecision(text, module) {
+    try {
+      var aiResult = await requestAiGrade(text, module);
+      updateState(aiResult.deltas, aiResult);
+      return aiResult;
+    } catch (_error) {
+      return evaluateDecision(text);
+    }
+  }
+
+  async function requestAiGrade(text, module) {
+    if (window.location.protocol === "file:") {
+      throw new Error("AI grading requires an HTTP endpoint.");
+    }
+
+    var controller = new AbortController();
+    var timeout = window.setTimeout(function () {
+      controller.abort();
+    }, 12000);
+
+    try {
+      var response = await fetch("/api/grade", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          module: {
+            id: module.id,
+            title: module.title,
+            objective: module.objective,
+            narrative: module.narrative,
+            prompt: module.prompt,
+            phaseLabel: module.phaseLabel
+          },
+          state: {
+            trustAuthorityScore: state.trustAuthorityScore,
+            securityForcesFatigue: state.securityForcesFatigue,
+            missionContinuityImpact: state.missionContinuityImpact,
+            elapsedHours: state.elapsedHours,
+            flags: clone(state.flags)
+          },
+          scenario: {
+            constraints: scenario.constraints,
+            trustVectors: scenario.trustVectors,
+            positiveSignals: scenario.positiveSignals,
+            negativeSignals: scenario.negativeSignals
+          },
+          terminalOutput: moduleUiState[activeModuleIndex].terminalOutput,
+          response: text
+        }),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error("AI grading unavailable.");
+      }
+
+      return normalizeAiResult(await response.json(), text);
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  function normalizeAiResult(payload, text) {
+    var rating = ["strong", "partial", "risky"].indexOf(payload.rating) >= 0 ? payload.rating : "partial";
+    var deltas = payload.metricDeltas || {};
+    var flags = payload.flags || {};
+    var risky = rating === "risky" || Boolean(flags.attemptedUnsafePatch);
+    var strong = rating === "strong" && !risky;
+
+    applyAiFlags(flags);
+
+    return {
+      title: rating === "strong" ? "STRONG ZERO TRUST DECISION" : rating === "risky" ? "RISKY ASSUMPTION DETECTED" : "PARTIAL DECISION ACCEPTED",
+      source: "AI RUBRIC",
+      rating: rating,
+      assessment: coerceText(payload.assessment, "AI feedback returned no assessment."),
+      strengths: coerceList(payload.strengths),
+      gaps: coerceList(payload.gaps),
+      challengeQuestion: coerceText(payload.challengeQuestion, "What evidence would change your trust posture?"),
+      nextAction: coerceText(payload.nextAction, "Add one concrete verification step before submitting again."),
+      teachingPoint: coerceText(payload.challengeQuestion, "What evidence would change your trust posture?"),
+      nextConsideration: coerceText(payload.nextAction, "Add one concrete verification step before submitting again."),
+      deltas: {
+        trustAuthorityScore: clamp(Number(deltas.trustAuthorityScore) || 0, -18, 18),
+        securityForcesFatigue: clamp(Number(deltas.securityForcesFatigue) || 0, 0, 10),
+        missionContinuityImpact: clamp(Number(deltas.missionContinuityImpact) || 0, -8, 8),
+        elapsedHours: clamp(Number(deltas.elapsedHours) || 4, 0, 8)
+      },
+      text: text,
+      risky: risky,
+      strong: strong
+    };
+  }
+
+  function applyAiFlags(flags) {
+    if (flags.assumedBreach) state.flags.assumedBreach = true;
+    if (flags.manualVerificationDefined) state.flags.manualVerificationDefined = true;
+    if (flags.evidenceBaselineEstablished) state.flags.evidenceBaselineEstablished = true;
+    if (flags.attemptedUnsafePatch) state.flags.attemptedUnsafePatch = true;
+    if (flags.recoveryAuthorized) state.flags.recoveryAuthorized = true;
   }
 
   function updateState(deltas, result) {
@@ -382,15 +496,27 @@
     var deltas = result.deltas || {};
     var html = [
       '<div class="feedback-card">',
-      "<strong>" + escapeHtml(result.title) + "</strong>",
+      '<div class="rubric-heading"><strong>' + escapeHtml(result.title) + "</strong><span>" + escapeHtml(result.source || "LOCAL RUBRIC") + "</span></div>",
       '<div class="score-line">' + renderDelta("Trust", deltas.trustAuthorityScore || 0) + renderDelta("Fatigue", deltas.securityForcesFatigue || 0) + renderDelta("Continuity", deltas.missionContinuityImpact || 0) + renderDelta("Hours", deltas.elapsedHours || 0) + "</div>",
       "<span>Assessment: " + escapeHtml(result.assessment) + "</span>",
-      "<span>Teaching point: " + escapeHtml(result.teachingPoint) + "</span>",
-      "<span>Next consideration: " + escapeHtml(result.nextConsideration) + "</span>",
+      renderRubricList("Strengths", result.strengths),
+      renderRubricList("Gaps", result.gaps),
+      "<span>Challenge question: " + escapeHtml(result.challengeQuestion || result.teachingPoint) + "</span>",
+      "<span>Next action: " + escapeHtml(result.nextAction || result.nextConsideration) + "</span>",
       "</div>"
     ].join("");
     moduleUiState[activeModuleIndex].feedbackHtml = html + moduleUiState[activeModuleIndex].feedbackHtml;
     output.innerHTML = moduleUiState[activeModuleIndex].feedbackHtml;
+  }
+
+  function renderRubricList(label, items) {
+    if (!items || !items.length) {
+      return "";
+    }
+
+    return '<div class="rubric-list"><span>' + escapeHtml(label) + ":</span><ul>" + items.map(function (item) {
+      return "<li>" + escapeHtml(item) + "</li>";
+    }).join("") + "</ul></div>";
   }
 
   function renderDelta(label, value) {
@@ -775,6 +901,21 @@
     if (feedbackOutput) {
       savedUi.feedbackHtml = feedbackOutput.innerHTML;
     }
+  }
+
+  function coerceText(value, fallback) {
+    var text = String(value || "").trim();
+    return text || fallback;
+  }
+
+  function coerceList(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.map(function (item) {
+      return String(item || "").trim();
+    }).filter(Boolean).slice(0, 3);
   }
 
   function clone(value) {
