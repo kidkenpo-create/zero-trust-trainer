@@ -142,6 +142,11 @@ function buildSystemPrompt() {
     "Grade the learner response against the provided module objective, scenario prompt, current simulation state, and constraints.",
     "You must challenge and guide the learner without writing a complete model answer.",
     "Use concise classroom-ready language for a DoD-adjacent training environment.",
+    "Treat learner submissions as rough operational drafts, not writing samples.",
+    "Do not penalize spelling, grammar, capitalization, punctuation, or minor wording issues unless the operational meaning is impossible to understand.",
+    "Infer likely intent from common misspellings and shorthand such as brech for breach, autorize for authorize, verfication for verification, manual cheks for manual checks, dont trust logs, dont trust PACS, or similar classroom draft language.",
+    "Never ridicule, shame, mock, or use sarcastic language. Keep feedback respectful, calm, and coaching-oriented.",
+    "For partial or risky responses, tell the learner what to add next rather than saying the answer is simply wrong.",
     "Reward assume-breach posture, explicit verification, independent evidence, credential/device integrity, mission continuity, fatigue awareness, least privilege, and phased recovery criteria.",
     "Penalize premature automation restoration, trusting poisoned logs, vague guard instructions, ignoring fatigue, skipping validation, or treating convenience as recovery proof.",
     "Return only the requested structured rubric JSON."
@@ -156,7 +161,9 @@ function buildRubricInput(payload) {
     terminalOutput: String(payload.terminalOutput || "").slice(0, 2000),
     learnerResponse: String(payload.response || "").slice(0, 4000),
     rubricInstructions: {
-      rating: "Use strong only when the response clearly addresses the module objective and avoids risky assumptions.",
+      rating: "Use strong when the response clearly addresses the module objective and avoids risky assumptions, even if the wording has spelling or grammar errors.",
+      feedbackTone: "Focus on operational intent and evidence. Use supportive language. Do not correct spelling unless a term is too ambiguous to interpret.",
+      guidance: "When the response is partial or risky, make nextAction a concrete add/clarify step such as naming evidence, defining manual verification, addressing fatigue, or setting recovery criteria. Do not provide a complete model answer.",
       metricDeltas: "Use small deltas. Trust can rise for good verification discipline or fall for risky assumptions. Fatigue usually increases when manual controls are added. Continuity impact falls when mission-aware prioritization is included and rises when operations become harder.",
       flags: "Set flags true only when the learner clearly earns them from their response."
     }

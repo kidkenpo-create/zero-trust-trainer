@@ -233,8 +233,8 @@
     return [
       '<header class="module-header">',
       '<div class="module-title-row"><h2>' + escapeHtml(module.title) + '</h2><span class="status-badge ' + getModeClass() + '">' + getSystemMode() + "</span></div>",
-      renderDisclosure("Mission Assistance", '<div class="guided-copy-row"><p>' + escapeHtml(module.narrative) + "</p>" + renderGuideButton(module, "narrative") + "</div>", false),
-      renderDisclosure("Learning Objective", '<div class="field-label-row"><span class="label">Learning Objective</span>' + renderGuideButton(module, "objective") + '</div><p>' + escapeHtml(module.objective) + "</p>", false, "objective"),
+      renderDisclosure("Mission Assistance", '<div class="guided-copy-row"><p>' + escapeHtml(module.narrative) + "</p>" + renderGuideButton(module, "narrative") + "</div>", true),
+      renderDisclosure("Learning Objective", '<div class="field-label-row"><span class="label">Learning Objective</span>' + renderGuideButton(module, "objective") + '</div><p>' + escapeHtml(module.objective) + "</p>", true, "objective"),
       "</header>"
     ].join("");
   }
@@ -407,7 +407,7 @@
   }
 
   function evaluateDecision(text) {
-    var lower = text.toLowerCase();
+    var lower = normalizeLearnerText(text.toLowerCase());
     var positives = countMatches(lower, scenario.positiveSignals);
     var negatives = countMatches(lower, scenario.negativeSignals);
     var deltas = {
@@ -440,7 +440,7 @@
     var risky = negatives > 0 || deltas.trustAuthorityScore < 0;
     var strong = positives >= 2 && !risky;
     var result = {
-      title: strong ? "STRONG ZERO TRUST DECISION" : risky ? "RISKY ASSUMPTION DETECTED" : "PARTIAL DECISION ACCEPTED",
+      title: strong ? "STRONG ZERO TRUST DECISION" : risky ? "RISK TO REVIEW" : "PARTIAL DRAFT ACCEPTED",
       source: "LOCAL RUBRIC",
       assessment: buildAssessment(positives, negatives),
       teachingPoint: buildTeachingPoint(lower, risky),
@@ -529,7 +529,7 @@
     applyAiFlags(flags);
 
     return {
-      title: rating === "strong" ? "STRONG ZERO TRUST DECISION" : rating === "risky" ? "RISKY ASSUMPTION DETECTED" : "PARTIAL DECISION ACCEPTED",
+      title: rating === "strong" ? "STRONG ZERO TRUST DECISION" : rating === "risky" ? "RISK TO REVIEW" : "PARTIAL DRAFT ACCEPTED",
       source: "AI RUBRIC",
       rating: rating,
       assessment: coerceText(payload.assessment, "AI feedback returned no assessment."),
@@ -656,6 +656,7 @@
     var html = [
       '<div class="feedback-card">',
       '<div class="rubric-heading"><strong>' + escapeHtml(result.title) + "</strong><span>" + escapeHtml(result.source || "LOCAL RUBRIC") + "</span></div>",
+      '<p class="feedback-support-note">Spelling is not graded. Focus on operational intent, evidence, and clear next steps.</p>',
       '<div class="score-line">' + renderDelta("Trust", deltas.trustAuthorityScore || 0) + renderDelta("Fatigue", deltas.securityForcesFatigue || 0) + renderDelta("Continuity", deltas.missionContinuityImpact || 0) + renderDelta("Hours", deltas.elapsedHours || 0) + "</div>",
       "<span>Assessment: " + escapeHtml(result.assessment) + "</span>",
       renderRubricList("Strengths", result.strengths),
@@ -954,17 +955,17 @@
 
   function buildAssessment(positives, negatives) {
     if (negatives > 0) {
-      return "The action contains assumptions that could restore trust before evidence supports it.";
+      return "This draft has a useful starting point, but it includes an assumption that could restore trust before evidence supports it.";
     }
     if (positives >= 3) {
       return "The action aligns with multiple Zero Trust behaviors and improves operational discipline.";
     }
-    return "The action has useful intent but needs more explicit evidence, authority, or operating detail.";
+    return "This is a workable start. Add more explicit evidence, authority, or operating detail so another operator can follow the decision.";
   }
 
   function buildTeachingPoint(lower, risky) {
     if (risky) {
-      return "Under PACS compromise, speed can become risk when it bypasses validation.";
+      return "Under PACS compromise, speed becomes safer when it is paired with validation and clear limits.";
     }
     if (lower.indexOf("fatigue") >= 0 || lower.indexOf("72") >= 0) {
       return "Human capacity is part of the security architecture during manual fallback.";
@@ -976,11 +977,38 @@
   }
 
   function buildNextConsideration() {
-    if (!state.flags.assumedBreach) return "Declare what is untrusted and how the team will operate under assumed breach.";
-    if (!state.flags.manualVerificationDefined) return "Define guard-executable manual verification steps and escalation criteria.";
-    if (state.securityForcesFatigue > 60) return "Reduce fatigue risk with rotations, prioritized access, and commander-approved exceptions.";
-    if (!state.flags.evidenceBaselineEstablished) return "Identify the evidence baseline required before any automated restoration.";
+    if (!state.flags.assumedBreach) return "Add what is untrusted and how the team will operate under assumed breach.";
+    if (!state.flags.manualVerificationDefined) return "Add guard-executable manual verification steps and escalation criteria.";
+    if (state.securityForcesFatigue > 60) return "Add a fatigue control such as rotations, prioritized access, or commander-approved exceptions.";
+    if (!state.flags.evidenceBaselineEstablished) return "Add the evidence baseline required before any automated restoration.";
     return "Plan phased recovery with monitoring, rollback criteria, and continued manual oversight.";
+  }
+
+  function normalizeLearnerText(text) {
+    return text
+      .replace(/\bdon't trust logs\b/g, "logs untrusted")
+      .replace(/\bdont trust logs\b/g, "logs untrusted")
+      .replace(/\bdo not trust logs\b/g, "logs untrusted")
+      .replace(/\bnot trust logs\b/g, "logs untrusted")
+      .replace(/\bdon't trust pacs\b/g, "pacs untrusted")
+      .replace(/\bdont trust pacs\b/g, "pacs untrusted")
+      .replace(/\bdo not trust pacs\b/g, "pacs untrusted")
+      .replace(/\bnot trust pacs\b/g, "pacs untrusted")
+      .replace(/\bbrech\b/g, "breach")
+      .replace(/\bautorize\b/g, "authorize")
+      .replace(/\bauthorise\b/g, "authorize")
+      .replace(/\bverfication\b/g, "verification")
+      .replace(/\bverifcation\b/g, "verification")
+      .replace(/\bvalidaton\b/g, "validation")
+      .replace(/\bmanul\b/g, "manual")
+      .replace(/\bcheks\b/g, "checks")
+      .replace(/\bchks\b/g, "checks")
+      .replace(/\bmanual checks\b/g, "manual verification")
+      .replace(/\bmanual check\b/g, "manual verification")
+      .replace(/\buntrustd\b/g, "untrusted")
+      .replace(/\bevidance\b/g, "evidence")
+      .replace(/\bbasline\b/g, "baseline")
+      .replace(/\brestor\b/g, "restore");
   }
 
   function getSystemMode() {
