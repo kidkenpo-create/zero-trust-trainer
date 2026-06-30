@@ -96,6 +96,11 @@ a:focus-visible {
   place-items: center;
 }
 
+.intro-briefing[hidden],
+.workstation-frame[hidden] {
+  display: none !important;
+}
+
 .intro-window {
   width: min(1120px, 100%);
   border: 1px solid #405240;
