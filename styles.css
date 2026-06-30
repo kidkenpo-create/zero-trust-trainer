@@ -485,11 +485,6 @@ h3 {
   padding: 0.75rem;
 }
 
-.decision-workspace {
-  display: grid;
-  gap: 0.65rem;
-}
-
 .field-label-row {
   display: flex;
   align-items: center;
@@ -501,7 +496,6 @@ h3 {
   margin-bottom: 0;
 }
 
-.response-input,
 .terminal-input {
   width: 100%;
   border: 1px solid var(--line);
@@ -510,12 +504,6 @@ h3 {
   background: var(--terminal);
   font-family: var(--font-mono);
   box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.72), inset -1px -1px 0 rgba(138, 154, 130, 0.2);
-}
-
-.response-input {
-  min-height: 132px;
-  resize: vertical;
-  padding: 0.75rem;
 }
 
 .terminal-row {
@@ -1146,7 +1134,7 @@ body {
 .system-strip {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 0.8rem;
   align-items: center;
   min-height: 32px;
@@ -1186,12 +1174,50 @@ body {
   color: var(--amber);
 }
 
+.ai-status {
+  border: 1px solid #435244;
+  padding: 0.16rem 0.42rem;
+  color: #d1c6a3;
+  background: #0b110d;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ai-status.connected {
+  border-color: rgba(139, 175, 129, 0.72);
+  color: #c8e0bd;
+  background: #101b12;
+}
+
+.ai-status.offline,
+.ai-status.checking {
+  border-color: rgba(211, 166, 78, 0.6);
+  color: var(--amber);
+  background: #17150d;
+}
+
 .system-strip-content {
   overflow: hidden;
   color: #b9c9ad;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: none;
+}
+
+.terminal-submit-note {
+  margin-top: 0.9rem;
+  border-left: 3px solid var(--amber);
+  padding: 0.65rem 0.75rem;
+  color: #d8d0aa;
+  background: rgba(211, 166, 78, 0.08);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .system-strip-leds {
@@ -1538,6 +1564,11 @@ body {
 
   .system-strip {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ai-status {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .reference-toggle {

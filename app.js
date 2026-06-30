@@ -38,6 +38,7 @@
     els.appShell = document.getElementById("app");
     els.referencePanel = document.getElementById("reference-panel");
     els.referenceToggle = document.getElementById("reference-toggle");
+    els.aiStatus = document.getElementById("ai-status");
   }
 
   function bindGlobalEvents() {
@@ -69,13 +70,15 @@
       }
 
       if (event.ctrlKey && event.key === "Enter") {
-        var submit = document.getElementById("submit-decision");
-        if (submit) {
+        var run = document.getElementById("run-command");
+        if (run) {
           event.preventDefault();
-          submit.click();
+          run.click();
         }
       }
     });
+
+    checkAiStatus();
   }
 
   function toggleReferencePanel() {
@@ -84,6 +87,44 @@
     els.referencePanel.classList.toggle("reference-panel-hidden", collapsed);
     els.referenceToggle.setAttribute("aria-expanded", String(!collapsed));
     els.referenceToggle.textContent = collapsed ? "Show Reference" : "Hide Reference";
+  }
+
+  async function checkAiStatus() {
+    if (!els.aiStatus) {
+      return;
+    }
+
+    if (window.location.protocol === "file:") {
+      setAiStatus("AI: local rubric", "offline");
+      return;
+    }
+
+    var controller = new AbortController();
+    var timeout = window.setTimeout(function () {
+      controller.abort();
+    }, 5000);
+
+    try {
+      var response = await fetch("/api/status", { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error("AI status unavailable.");
+      }
+      var status = await response.json();
+      if (status.configured) {
+        setAiStatus("AI: connected / " + status.model, "connected");
+      } else {
+        setAiStatus("AI: local rubric", "offline");
+      }
+    } catch (_error) {
+      setAiStatus("AI: local rubric", "offline");
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  function setAiStatus(label, stateClass) {
+    els.aiStatus.textContent = label;
+    els.aiStatus.className = "ai-status " + stateClass;
   }
 
   function renderNavigation() {
@@ -146,11 +187,8 @@
       '<div class="lesson-grid">',
       '<section class="subpanel"><div class="subpanel-header"><span>SCENARIO PROMPT</span>' + renderGuideButton(module, "prompt") + '</div><div class="subpanel-body">',
       '<p>' + escapeHtml(module.prompt) + "</p>",
-      '<div class="decision-workspace">',
-      '<div class="field-label-row"><label for="learner-response" class="label">Learner Response</label>' + renderGuideButton(module, "response") + "</div>",
-      '<textarea id="learner-response" class="response-input" placeholder="Type your Zero Trust decision, SOP, or recovery criteria here...">' + escapeHtml(savedUi.responseDraft) + "</textarea>",
-      '<button type="button" id="submit-decision" class="button">Submit Decision</button>',
-      "</div></div></section>",
+      '<p class="terminal-submit-note">Submit your decision, SOP, or recovery criteria through the Command Terminal below.</p>',
+      "</div></section>",
       '<section class="subpanel"><div class="subpanel-header"><span>PHASE TRACKER</span>' + renderGuideButton(module, "tracker") + '</div><div class="subpanel-body">',
       renderProgressTracker(),
       renderMetricGrid(),
@@ -159,43 +197,6 @@
       renderConsole(module),
       "</div>"
     ].join("");
-
-    document.getElementById("learner-response").addEventListener("input", function (event) {
-      moduleUiState[activeModuleIndex].responseDraft = event.target.value;
-    });
-
-    document.getElementById("submit-decision").addEventListener("click", async function () {
-      var input = document.getElementById("learner-response");
-      var submit = document.getElementById("submit-decision");
-      var text = input.value.trim();
-      if (!text) {
-        renderFeedback({
-          title: "NO DECISION ENTERED",
-          source: "LOCAL RUBRIC",
-          assessment: "The console requires an explicit action, assumption, or protocol.",
-          teachingPoint: "Zero Trust depends on observable decisions, not implied intent.",
-          nextConsideration: "State what you trust, what you do not trust, and what evidence changes that posture.",
-          deltas: {}
-        });
-        return;
-      }
-
-      submit.disabled = true;
-      submit.textContent = "Evaluating...";
-      try {
-        var result = await gradeDecision(text, module);
-        input.value = "";
-        moduleUiState[activeModuleIndex].responseDraft = "";
-        renderFeedback(result);
-        renderStatusBar();
-        renderRightPanel(module);
-        bindGuideEvents(module);
-        renderNavigation();
-      } finally {
-        submit.disabled = false;
-        submit.textContent = "Submit Decision";
-      }
-    });
 
     bindTerminal();
   }
@@ -216,11 +217,11 @@
       '<section class="subpanel">',
       '<div class="subpanel-header"><span>COMMAND TERMINAL</span>' + renderGuideButton(module, "terminal") + "</div>",
       '<div class="subpanel-body">',
-      '<p class="label">' + escapeHtml(module.commandHint) + "</p>",
+      '<p class="label">' + escapeHtml(module.commandHint) + ' You can also type your full learner response here for grading.</p>',
       '<div class="terminal-row">',
       '<span class="terminal-prompt" aria-hidden="true">ZT-DESK:\\MISSION&gt;</span>',
-      '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command" placeholder="ENTER COMMAND" value="' + escapeHtml(savedUi.terminalDraft) + '">',
-      '<button type="button" id="run-command" class="button secondary">Run</button>',
+      '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command or learner response" placeholder="TYPE COMMAND OR RESPONSE" value="' + escapeHtml(savedUi.terminalDraft) + '">',
+      '<button type="button" id="run-command" class="button secondary">Send</button>',
       "</div>",
       '<div id="terminal-output" class="terminal-output" aria-live="polite">' + escapeHtml(savedUi.terminalOutput) + "</div>",
       '<div id="feedback-output" class="feedback-output" aria-live="polite">' + savedUi.feedbackHtml + "</div>",
@@ -237,20 +238,27 @@
       moduleUiState[activeModuleIndex].terminalDraft = event.target.value;
     });
 
-    function execute() {
-      var command = input.value.trim().toUpperCase();
-      if (!command) {
+    async function execute() {
+      var rawInput = input.value.trim();
+      var command = rawInput.toUpperCase();
+      if (!rawInput) {
         return;
       }
-      var output = handleCommand(command);
-      var terminalText = "ZT-DESK:\\MISSION> " + command + "\n" + output;
-      document.getElementById("terminal-output").textContent = terminalText;
-      moduleUiState[activeModuleIndex].terminalOutput = terminalText;
-      input.value = "";
-      moduleUiState[activeModuleIndex].terminalDraft = "";
-      renderStatusBar();
-      renderRightPanel(modules[activeModuleIndex]);
-      bindGuideEvents(modules[activeModuleIndex]);
+
+      if (isSupportedCommand(command) || isCommandAttempt(command)) {
+        var output = handleCommand(command);
+        var terminalText = "ZT-DESK:\\MISSION> " + command + "\n" + output;
+        document.getElementById("terminal-output").textContent = terminalText;
+        moduleUiState[activeModuleIndex].terminalOutput = terminalText;
+        input.value = "";
+        moduleUiState[activeModuleIndex].terminalDraft = "";
+        renderStatusBar();
+        renderRightPanel(modules[activeModuleIndex]);
+        bindGuideEvents(modules[activeModuleIndex]);
+        return;
+      }
+
+      await submitTerminalResponse(rawInput, input, run);
     }
 
     run.addEventListener("click", execute);
@@ -260,6 +268,37 @@
         execute();
       }
     });
+  }
+
+  async function submitTerminalResponse(text, input, run) {
+    var module = modules[activeModuleIndex];
+    var output = document.getElementById("terminal-output");
+
+    run.disabled = true;
+    run.textContent = "Evaluating...";
+    output.textContent = "ZT-DESK:\\MISSION> " + text + "\nROUTING RESPONSE TO RUBRIC ENGINE...";
+    input.value = "";
+    moduleUiState[activeModuleIndex].terminalDraft = "";
+
+    try {
+      var result = await gradeDecision(text, module);
+      var terminalText = [
+        "ZT-DESK:\\MISSION> " + text,
+        (result.source || "LOCAL RUBRIC") + " COMPLETE.",
+        "REVIEW FEEDBACK BELOW. TYPE STATUS FOR UPDATED METRICS."
+      ].join("\n");
+      output.textContent = terminalText;
+      moduleUiState[activeModuleIndex].terminalOutput = terminalText;
+      renderFeedback(result);
+      renderStatusBar();
+      renderRightPanel(module);
+      bindGuideEvents(module);
+      renderNavigation();
+    } finally {
+      run.disabled = false;
+      run.textContent = "Send";
+      input.focus();
+    }
   }
 
   function evaluateDecision(text) {
@@ -489,6 +528,21 @@
     }
 
     return scenario.commandResponses[command] || "UNKNOWN COMMAND. TYPE HELP FOR SUPPORTED COMMANDS.";
+  }
+
+  function isSupportedCommand(command) {
+    return command === "RESET" ||
+      command === "STATUS" ||
+      command === "DECLARE BREACH ASSUMED" ||
+      command === "DEPLOY MANUAL CHECKPOINTS" ||
+      command === "WRITE VERIFICATION SOP" ||
+      command === "ADVANCE CLOCK" ||
+      command === "AUTHORIZE RECOVERY" ||
+      Object.prototype.hasOwnProperty.call(scenario.commandResponses || {}, command);
+  }
+
+  function isCommandAttempt(command) {
+    return /^(HELP|STATUS|RESET|QUERY|ANALYZE|DECLARE|DEPLOY|WRITE|ADVANCE|AUTHORIZE)\b/.test(command);
   }
 
   function renderFeedback(result) {
@@ -871,7 +925,6 @@
   function createModuleUiState() {
     return modules.map(function () {
       return {
-        responseDraft: "",
         terminalDraft: "",
         terminalOutput: "SYSTEM READY. TYPE HELP FOR AVAILABLE COMMANDS.",
         feedbackHtml: "Decision feedback will appear here after submission."
@@ -881,16 +934,12 @@
 
   function persistActiveModuleUiState() {
     var savedUi = moduleUiState[activeModuleIndex];
-    var response = document.getElementById("learner-response");
     var terminalInput = document.getElementById("terminal-input");
     var terminalOutput = document.getElementById("terminal-output");
     var feedbackOutput = document.getElementById("feedback-output");
 
     if (!savedUi) {
       return;
-    }
-    if (response) {
-      savedUi.responseDraft = response.value;
     }
     if (terminalInput) {
       savedUi.terminalDraft = terminalInput.value;
