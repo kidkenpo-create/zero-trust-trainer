@@ -39,11 +39,15 @@
     els.referencePanel = document.getElementById("reference-panel");
     els.referenceToggle = document.getElementById("reference-toggle");
     els.aiStatus = document.getElementById("ai-status");
+    els.operatorBriefing = document.getElementById("operator-briefing");
+    els.workstationFrame = document.getElementById("workstation-frame");
+    els.enterConsole = document.getElementById("enter-console");
   }
 
   function bindGlobalEvents() {
     els.resetButton.addEventListener("click", resetSimulation);
     els.referenceToggle.addEventListener("click", toggleReferencePanel);
+    els.enterConsole.addEventListener("click", enterMissionConsole);
 
     document.addEventListener("click", function (event) {
       var actionButton = event.target.closest("[data-learner-action]");
@@ -106,6 +110,15 @@
     });
 
     checkAiStatus();
+  }
+
+  function enterMissionConsole() {
+    els.operatorBriefing.hidden = true;
+    els.workstationFrame.hidden = false;
+    var main = document.getElementById("main-content");
+    if (main) {
+      main.focus();
+    }
   }
 
   function toggleReferencePanel() {

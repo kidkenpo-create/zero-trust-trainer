@@ -8,8 +8,61 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to lesson</a>
-    <div class="workstation-frame">
+    <a class="skip-link" href="#operator-briefing">Skip to briefing</a>
+    <section id="operator-briefing" class="intro-briefing" aria-labelledby="intro-title">
+      <div class="intro-window">
+        <div class="window-title">OPERATOR BRIEFING</div>
+        <div class="intro-body">
+          <p class="eyebrow">ZT-DESK OS v2 // Self-Paced Training</p>
+          <h1 id="intro-title">Zero Trust Trainer</h1>
+          <p class="intro-lede">Respond to a suspected physical access control trust failure. Practice Zero Trust decision-making under operational technology constraints where PACS, badge activity, identity assertions, and logs may no longer be authoritative.</p>
+
+          <div class="intro-grid" aria-label="Training overview">
+            <article class="intro-panel">
+              <h2>How To Use It</h2>
+              <ol>
+                <li>Read the mission assistance and learning objective.</li>
+                <li>Use terminal commands to inspect scenario evidence.</li>
+                <li>Type your operational response into the terminal for grading.</li>
+                <li>Review the rubric, revise if needed, then advance.</li>
+              </ol>
+            </article>
+            <article class="intro-panel">
+              <h2>How AI Helps</h2>
+              <ul>
+                <li>AI grades submitted responses when connected.</li>
+                <li>It challenges assumptions and suggests what to add next.</li>
+                <li>It does not provide a full model answer.</li>
+                <li>Local rubric feedback works if AI is unavailable.</li>
+              </ul>
+            </article>
+            <article class="intro-panel">
+              <h2>What Good Looks Like</h2>
+              <ul>
+                <li>Assume breach and verify explicitly.</li>
+                <li>Do not treat poisoned logs or PACS assertions as authority.</li>
+                <li>Preserve mission continuity and manage Security Forces fatigue.</li>
+                <li>Require evidence before restoration.</li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="intro-callout">
+            <strong>Progression rule:</strong> Mission Progress unlocks after a non-risky response. Spelling is not graded; operational intent, evidence, and clear next steps matter.
+          </div>
+
+          <button type="button" id="enter-console" class="button intro-start">Enter Mission Console</button>
+
+          <details class="briefing-script">
+            <summary>Briefing Script / Transcript</summary>
+            <p>Welcome to the Zero Trust Trainer. In this exercise, you are responding to a suspected physical access control system trust failure. PACS telemetry, badge activity, identity assertions, and access logs may be manipulated, so your job is not to restore convenience first. Your job is to decide what can be trusted, what must keep operating, and what evidence is required before automated access decisions can resume.</p>
+            <p>Start each phase by reading the mission assistance and learning objective. Use the command terminal to inspect scenario evidence, then type a plain-language operational response into the terminal. The AI rubric, when connected, will challenge your assumptions and suggest what to add next. If AI is unavailable, a local rubric still provides feedback. Spelling is not graded. Focus on Zero Trust reasoning: assume breach, verify explicitly, protect mission continuity, manage fatigue, and require evidence before restoration.</p>
+            <p>When your response is non-risky, Mission Progress unlocks the next phase. If the response is risky, revise it and submit again. Treat this as a mission operations exercise, not a quiz. Your goal is disciplined decision-making under degraded trust.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+    <div class="workstation-frame" id="workstation-frame" hidden>
       <div class="frame-corner frame-corner-tl" aria-hidden="true"></div>
       <div class="frame-corner frame-corner-tr" aria-hidden="true"></div>
       <div class="frame-corner frame-corner-bl" aria-hidden="true"></div>
