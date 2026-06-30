@@ -448,6 +448,49 @@ h3 {
   margin-bottom: 0;
 }
 
+.current-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  border: 1px solid var(--amber-dim);
+  border-left: 4px solid var(--amber);
+  padding: 0.62rem 0.75rem;
+  color: var(--text);
+  background:
+    repeating-linear-gradient(90deg, rgba(211, 166, 78, 0.065) 0, rgba(211, 166, 78, 0.065) 1px, transparent 1px, transparent 8px),
+    rgba(12, 18, 13, 0.88);
+  font-family: var(--font-mono);
+}
+
+.current-task .label {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.current-task strong {
+  display: block;
+  color: var(--amber);
+  font-size: 0.92rem;
+  text-transform: uppercase;
+}
+
+.current-task p {
+  margin: 0;
+  color: #d6d0b7;
+  font-size: 0.82rem;
+}
+
+.task-code {
+  border: 1px solid var(--line-soft);
+  padding: 0.15rem 0.4rem;
+  color: var(--green);
+  background: rgba(1, 5, 2, 0.68);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .lesson-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
@@ -512,11 +555,60 @@ h3 {
   gap: 0.5rem;
 }
 
+.terminal-mode-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.terminal-mode-card {
+  border: 1px solid var(--line-soft);
+  padding: 0.65rem;
+  background: rgba(1, 5, 2, 0.46);
+}
+
+.terminal-mode-card p {
+  margin: 0.25rem 0 0;
+  color: #c8c4ad;
+  font-size: 0.86rem;
+}
+
+.command-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.command-chip {
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 0.28rem 0.45rem;
+  color: var(--green);
+  background: #08100c;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.command-chip:hover,
+.command-chip:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.terminal-command-note {
+  margin: 0.45rem 0 0;
+  color: #c8c4ad;
+}
+
 .terminal-input {
   min-height: 38px;
   padding: 0.5rem 0.65rem;
   color: var(--green);
-  text-transform: uppercase;
+  text-transform: none;
   text-shadow: 0 0 6px rgba(159, 189, 143, 0.24);
 }
 
@@ -766,6 +858,25 @@ h3 {
   border-bottom: 1px solid var(--line-soft);
   padding-bottom: 0.7rem;
   margin-bottom: 0.7rem;
+}
+
+.feedback-actions {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--amber);
+  padding: 0.65rem;
+  background: rgba(211, 166, 78, 0.07);
+}
+
+.feedback-actions strong {
+  color: var(--amber);
+}
+
+.feedback-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .rubric-heading {
@@ -1363,6 +1474,16 @@ body {
   background: var(--amber);
 }
 
+.module-button.recommended-next {
+  border-color: rgba(211, 166, 78, 0.72);
+}
+
+.module-button.recommended-next .module-code {
+  border-color: var(--amber);
+  color: #17140b;
+  background: var(--amber);
+}
+
 .subpanel,
 .metric-card,
 .aar-card,
@@ -1551,6 +1672,11 @@ body {
 
   .app-shell,
   .lesson-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .current-task,
+  .terminal-mode-grid {
     grid-template-columns: 1fr;
   }
 

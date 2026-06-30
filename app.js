@@ -45,6 +45,33 @@
     els.resetButton.addEventListener("click", resetSimulation);
     els.referenceToggle.addEventListener("click", toggleReferencePanel);
 
+    document.addEventListener("click", function (event) {
+      var actionButton = event.target.closest("[data-learner-action]");
+      if (!actionButton) {
+        return;
+      }
+
+      var action = actionButton.getAttribute("data-learner-action");
+      if (action === "revise") {
+        if (moduleUiState[activeModuleIndex]) {
+          moduleUiState[activeModuleIndex].hasSubmitted = false;
+          moduleUiState[activeModuleIndex].hasInvestigated = true;
+        }
+        updateCurrentTask();
+        renderNavigation();
+        var input = document.getElementById("terminal-input");
+        if (input) {
+          input.focus();
+        }
+      }
+      if (action === "advance") {
+        var nextIndex = Number(actionButton.getAttribute("data-next-index"));
+        if (!Number.isNaN(nextIndex) && modules[nextIndex]) {
+          setActiveModule(nextIndex);
+        }
+      }
+    });
+
     els.hintButton.addEventListener("click", function () {
       var module = modules[activeModuleIndex];
       els.hintOutput.textContent = module.hint;
@@ -95,7 +122,7 @@
     }
 
     if (window.location.protocol === "file:") {
-      setAiStatus("AI: local rubric", "offline");
+      setAiStatus("LOCAL RUBRIC ACTIVE", "offline");
       return;
     }
 
@@ -111,12 +138,12 @@
       }
       var status = await response.json();
       if (status.configured) {
-        setAiStatus("AI: connected / " + status.model, "connected");
+        setAiStatus("AI CONNECTED: " + status.model, "connected");
       } else {
-        setAiStatus("AI: local rubric", "offline");
+        setAiStatus("LOCAL RUBRIC ACTIVE", "offline");
       }
     } catch (_error) {
-      setAiStatus("AI: local rubric", "offline");
+      setAiStatus("LOCAL RUBRIC ACTIVE", "offline");
     } finally {
       window.clearTimeout(timeout);
     }
@@ -132,7 +159,7 @@
     modules.forEach(function (module, index) {
       var button = document.createElement("button");
       button.type = "button";
-      button.className = "module-button";
+      button.className = "module-button" + (isRecommendedNext(index) ? " recommended-next" : "");
       button.setAttribute("aria-current", index === activeModuleIndex ? "page" : "false");
       button.innerHTML = [
         '<span class="module-select-marker" aria-hidden="true"></span>',
@@ -183,11 +210,12 @@
     els.moduleContent.innerHTML = [
       '<div class="lesson-body">',
       renderModuleHeader(module),
+      renderCurrentTask(module),
       renderStarterPanel(module),
       '<div class="lesson-grid">',
       '<section class="subpanel"><div class="subpanel-header"><span>SCENARIO PROMPT</span>' + renderGuideButton(module, "prompt") + '</div><div class="subpanel-body">',
       '<p>' + escapeHtml(module.prompt) + "</p>",
-      '<p class="terminal-submit-note">Submit your decision, SOP, or recovery criteria through the Command Terminal below.</p>',
+      '<p class="terminal-submit-note">Use the Command Terminal to investigate first, then type your decision, SOP, or recovery criteria for grading.</p>',
       "</div></section>",
       '<section class="subpanel"><div class="subpanel-header"><span>PHASE TRACKER</span>' + renderGuideButton(module, "tracker") + '</div><div class="subpanel-body">',
       renderProgressTracker(),
@@ -217,7 +245,7 @@
       '<section class="subpanel">',
       '<div class="subpanel-header"><span>COMMAND TERMINAL</span>' + renderGuideButton(module, "terminal") + "</div>",
       '<div class="subpanel-body">',
-      '<p class="label">' + escapeHtml(module.commandHint) + ' You can also type your full learner response here for grading.</p>',
+      renderTerminalModes(module),
       '<div class="terminal-row">',
       '<span class="terminal-prompt" aria-hidden="true">ZT-DESK:\\MISSION&gt;</span>',
       '<input id="terminal-input" class="terminal-input" autocomplete="off" aria-label="Terminal command or learner response" placeholder="TYPE COMMAND OR RESPONSE" value="' + escapeHtml(savedUi.terminalDraft) + '">',
@@ -233,6 +261,7 @@
   function bindTerminal() {
     var input = document.getElementById("terminal-input");
     var run = document.getElementById("run-command");
+    var commandChips = document.querySelectorAll("[data-command-chip]");
 
     input.addEventListener("input", function (event) {
       moduleUiState[activeModuleIndex].terminalDraft = event.target.value;
@@ -250,8 +279,10 @@
         var terminalText = "ZT-DESK:\\MISSION> " + command + "\n" + output;
         document.getElementById("terminal-output").textContent = terminalText;
         moduleUiState[activeModuleIndex].terminalOutput = terminalText;
+        moduleUiState[activeModuleIndex].hasInvestigated = true;
         input.value = "";
         moduleUiState[activeModuleIndex].terminalDraft = "";
+        updateCurrentTask();
         renderStatusBar();
         renderRightPanel(modules[activeModuleIndex]);
         bindGuideEvents(modules[activeModuleIndex]);
@@ -262,6 +293,13 @@
     }
 
     run.addEventListener("click", execute);
+    commandChips.forEach(function (button) {
+      button.addEventListener("click", function () {
+        input.value = button.getAttribute("data-command-chip");
+        moduleUiState[activeModuleIndex].terminalDraft = input.value;
+        execute();
+      });
+    });
     input.addEventListener("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -289,7 +327,9 @@
       ].join("\n");
       output.textContent = terminalText;
       moduleUiState[activeModuleIndex].terminalOutput = terminalText;
+      moduleUiState[activeModuleIndex].hasSubmitted = true;
       renderFeedback(result);
+      updateCurrentTask();
       renderStatusBar();
       renderRightPanel(module);
       bindGuideEvents(module);
@@ -299,6 +339,71 @@
       run.textContent = "Send";
       input.focus();
     }
+  }
+
+  function renderCurrentTask(module) {
+    var task = getCurrentTask(module);
+    return [
+      '<section id="current-task" class="current-task" aria-live="polite">',
+      '<div><span class="label">Current Task</span><strong id="current-task-step">' + escapeHtml(task.step) + "</strong></div>",
+      '<p id="current-task-copy">' + escapeHtml(task.copy) + "</p>",
+      '<span id="current-task-code" class="task-code">' + escapeHtml(task.code) + "</span>",
+      "</section>"
+    ].join("");
+  }
+
+  function updateCurrentTask() {
+    var taskPanel = document.getElementById("current-task");
+    if (!taskPanel) {
+      return;
+    }
+    var task = getCurrentTask(modules[activeModuleIndex]);
+    document.getElementById("current-task-step").textContent = task.step;
+    document.getElementById("current-task-copy").textContent = task.copy;
+    document.getElementById("current-task-code").textContent = task.code;
+  }
+
+  function getCurrentTask(module) {
+    var savedUi = moduleUiState[activeModuleIndex] || {};
+    if (savedUi.hasSubmitted) {
+      return {
+        step: "Advance",
+        copy: "Review the rubric, revise if needed, or continue to the next mission phase.",
+        code: "READY"
+      };
+    }
+    if (savedUi.hasInvestigated) {
+      return {
+        step: "Submit Decision",
+        copy: "Type a plain-language response in the terminal. State what is untrusted, what keeps operating, and what evidence or control comes next.",
+        code: "SUBMIT"
+      };
+    }
+    return {
+      step: "Investigate",
+      copy: "Read the scenario, run one suggested command, then submit your operational response through the terminal.",
+      code: module.phaseLabel || "TASK"
+    };
+  }
+
+  function renderTerminalModes(module) {
+    return [
+      '<div class="terminal-mode-grid">',
+      '<div class="terminal-mode-card"><span class="label">Investigate</span><p>Run a command to gather scenario telemetry.</p>' + renderCommandChips(module) + "</div>",
+      '<div class="terminal-mode-card"><span class="label">Submit</span><p>Type your full response for grading. Useful starts: "I would stop trusting...", "I would keep operating by...", "Before restoring automation..."</p></div>',
+      "</div>"
+    ].join("");
+  }
+
+  function renderCommandChips(module) {
+    var commands = module.suggestedCommands || [];
+    if (!commands.length) {
+      return '<p class="terminal-command-note">' + escapeHtml(module.commandHint) + "</p>";
+    }
+
+    return '<div class="command-chip-row">' + commands.map(function (command) {
+      return '<button type="button" class="command-chip" data-command-chip="' + escapeHtml(command) + '">' + escapeHtml(command) + "</button>";
+    }).join("") + "</div>";
   }
 
   function evaluateDecision(text) {
@@ -557,10 +662,39 @@
       renderRubricList("Gaps", result.gaps),
       "<span>Challenge question: " + escapeHtml(result.challengeQuestion || result.teachingPoint) + "</span>",
       "<span>Next action: " + escapeHtml(result.nextAction || result.nextConsideration) + "</span>",
+      renderFeedbackActions(result),
       "</div>"
     ].join("");
     moduleUiState[activeModuleIndex].feedbackHtml = html + moduleUiState[activeModuleIndex].feedbackHtml;
     output.innerHTML = moduleUiState[activeModuleIndex].feedbackHtml;
+  }
+
+  function renderFeedbackActions(result) {
+    var nextIndex = getNextModuleIndex();
+    var nextLabel = modules[nextIndex] ? modules[nextIndex].title : "After Action Review";
+    var nextCopy = result.strong ? "Ready to continue. You can advance, or revise if you want a sharper response." : "Revise if you can close the gap, or advance to see how the tradeoff carries forward.";
+    var actions = [
+      '<div class="feedback-actions">',
+      '<div><strong>Improve:</strong> ' + escapeHtml(result.nextAction || result.nextConsideration || "Add one concrete verification step.") + "</div>",
+      '<div><strong>Next:</strong> ' + escapeHtml(nextCopy) + "</div>",
+      '<div class="feedback-action-buttons">',
+      '<button type="button" class="button secondary small" data-learner-action="revise">Revise Response</button>'
+    ];
+
+    if (modules[nextIndex]) {
+      actions.push('<button type="button" class="button small" data-learner-action="advance" data-next-index="' + nextIndex + '">Advance: ' + escapeHtml(nextLabel) + "</button>");
+    }
+
+    actions.push("</div></div>");
+    return actions.join("");
+  }
+
+  function getNextModuleIndex() {
+    return Math.min(activeModuleIndex + 1, modules.length - 1);
+  }
+
+  function isRecommendedNext(index) {
+    return Boolean(moduleUiState[activeModuleIndex] && moduleUiState[activeModuleIndex].hasSubmitted && index === activeModuleIndex + 1);
   }
 
   function renderRubricList(label, items) {
@@ -925,6 +1059,8 @@
   function createModuleUiState() {
     return modules.map(function () {
       return {
+        hasInvestigated: false,
+        hasSubmitted: false,
         terminalDraft: "",
         terminalOutput: "SYSTEM READY. TYPE HELP FOR AVAILABLE COMMANDS.",
         feedbackHtml: "Decision feedback will appear here after submission."
