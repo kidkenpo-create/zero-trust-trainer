@@ -1494,6 +1494,18 @@ body {
   background: var(--amber);
 }
 
+.module-button.locked,
+.module-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.module-button.locked .module-code {
+  border-color: #4c5448;
+  color: #87917f;
+  background: #111811;
+}
+
 .subpanel,
 .metric-card,
 .aar-card,
@@ -1525,6 +1537,11 @@ body {
 
 .progress-step:last-child {
   border-right: 0;
+}
+
+.progress-step.locked {
+  background: #161d16;
+  box-shadow: inset 0 0 0 1px rgba(105, 116, 98, 0.3);
 }
 
 .metric-grid {
@@ -1563,38 +1580,91 @@ body {
   font-size: 0.58rem;
 }
 
-.terminal-row {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0;
-  border: 1px solid #344434;
-  background: #010301;
-  box-shadow: none;
+.command-terminal-panel {
+  border-color: #236331;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(37, 116, 55, 0.18), transparent 38%),
+    #020503;
+  box-shadow:
+    inset 0 0 0 1px rgba(86, 202, 105, 0.1),
+    0 0 18px rgba(42, 126, 55, 0.16);
 }
 
-.terminal-prompt {
+.command-terminal-panel .subpanel-header {
+  border-bottom-color: #2f7b3b;
+  color: #baf4a7;
+  background:
+    repeating-linear-gradient(90deg, rgba(68, 186, 81, 0.11) 0, rgba(68, 186, 81, 0.11) 1px, transparent 1px, transparent 6px),
+    #031006;
+  text-shadow: 0 0 8px rgba(122, 244, 122, 0.3);
+}
+
+.command-terminal-panel .subpanel-body {
+  background: #010402;
+}
+
+.command-terminal-panel .terminal-mode-card {
+  border-color: #1f5d2b;
+  background: #020904;
+  box-shadow: inset 0 0 12px rgba(58, 146, 64, 0.12);
+}
+
+.command-terminal-panel .terminal-mode-card .label,
+.command-terminal-panel .terminal-mode-card p {
+  color: #a8d99a;
+}
+
+.command-terminal-panel .command-chip {
+  border-color: #2c7d38;
+  color: #b9efaa;
+  background: #000f04;
+  text-shadow: 0 0 8px rgba(144, 235, 132, 0.26);
+}
+
+.command-terminal-panel .command-chip:hover,
+.command-terminal-panel .command-chip:focus-visible {
+  border-color: #e0b95e;
+  color: #f2d27a;
+  background: #061506;
+}
+
+.command-terminal-panel .terminal-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0;
+  border: 1px solid #2f8a3e;
+  background: #010301;
+  box-shadow: 0 0 14px rgba(61, 174, 74, 0.16), inset 0 0 10px rgba(61, 174, 74, 0.1);
+}
+
+.command-terminal-panel .terminal-prompt {
   display: inline-flex;
   align-items: center;
   padding: 0 0.65rem;
-  color: #a9c99c;
-  background: #061008;
+  color: #c7ffb7;
+  background: #001904;
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  text-shadow: none;
+  text-shadow: 0 0 8px rgba(144, 235, 132, 0.35);
   white-space: nowrap;
 }
 
-.terminal-input {
+.command-terminal-panel .terminal-input {
   border: 0;
+  color: #c7ffb7;
+  background: #000501;
   box-shadow: none;
+  text-shadow: 0 0 8px rgba(144, 235, 132, 0.35);
 }
 
-.terminal-output,
-.feedback-output {
-  border: 1px solid #263426;
-  background: #020603;
-  color: #b8d8aa;
-  box-shadow: none;
-  text-shadow: none;
+.command-terminal-panel .terminal-output,
+.command-terminal-panel .feedback-output {
+  border: 1px solid #1f6a2d;
+  background:
+    repeating-linear-gradient(180deg, rgba(111, 238, 102, 0.035) 0, rgba(111, 238, 102, 0.035) 1px, transparent 1px, transparent 4px),
+    #000401;
+  color: #bdf4ab;
+  box-shadow: inset 0 0 18px rgba(55, 154, 59, 0.2);
+  text-shadow: 0 0 8px rgba(144, 235, 132, 0.32);
 }
 
 .button {

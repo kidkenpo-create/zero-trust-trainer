@@ -66,7 +66,7 @@
       }
       if (action === "advance") {
         var nextIndex = Number(actionButton.getAttribute("data-next-index"));
-        if (!Number.isNaN(nextIndex) && modules[nextIndex]) {
+        if (!Number.isNaN(nextIndex) && modules[nextIndex] && canAccessModule(nextIndex)) {
           setActiveModule(nextIndex);
         }
       }
@@ -159,22 +159,33 @@
     modules.forEach(function (module, index) {
       var button = document.createElement("button");
       button.type = "button";
-      button.className = "module-button" + (isRecommendedNext(index) ? " recommended-next" : "");
+      var locked = isModuleLocked(index);
+      button.className = "module-button" + (isRecommendedNext(index) ? " recommended-next" : "") + (locked ? " locked" : "");
+      button.disabled = locked;
+      if (locked) {
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("title", "Submit a non-risky response in the current phase to unlock this module.");
+      }
       button.setAttribute("aria-current", index === activeModuleIndex ? "page" : "false");
       button.innerHTML = [
         '<span class="module-select-marker" aria-hidden="true"></span>',
         '<span class="module-index">' + (index + 1) + "</span>",
         '<span class="module-file"><span class="module-file-name">' + escapeHtml(module.title) + '</span><span class="module-file-path">/MISSION/REC-' + pad2(index + 1) + "</span></span>",
-        '<span class="module-code">' + (index === activeModuleIndex ? "ACTIVE" : getModuleCode(module, index)) + "</span>"
+        '<span class="module-code">' + getNavigationCode(module, index, locked) + "</span>"
       ].join("");
       button.addEventListener("click", function () {
-        setActiveModule(index);
+        if (!locked) {
+          setActiveModule(index);
+        }
       });
       els.moduleList.appendChild(button);
     });
   }
 
   function setActiveModule(index) {
+    if (index !== activeModuleIndex && !canAccessModule(index)) {
+      return;
+    }
     persistActiveModuleUiState();
     activeModuleIndex = index;
     state.currentPhase = index;
@@ -217,7 +228,7 @@
       '<p>' + escapeHtml(module.prompt) + "</p>",
       '<p class="terminal-submit-note">Use the Command Terminal to investigate first, then type your decision, SOP, or recovery criteria for grading.</p>',
       "</div></section>",
-      '<section class="subpanel"><div class="subpanel-header"><span>PHASE TRACKER</span>' + renderGuideButton(module, "tracker") + '</div><div class="subpanel-body">',
+      '<section class="subpanel"><div class="subpanel-header"><span>MISSION PROGRESS</span>' + renderGuideButton(module, "tracker") + '</div><div class="subpanel-body">',
       renderProgressTracker(),
       renderMetricGrid(),
       "</div></section>",
@@ -242,7 +253,7 @@
   function renderConsole(module) {
     var savedUi = moduleUiState[activeModuleIndex];
     return [
-      '<section class="subpanel">',
+      '<section class="subpanel command-terminal-panel">',
       '<div class="subpanel-header"><span>COMMAND TERMINAL</span>' + renderGuideButton(module, "terminal") + "</div>",
       '<div class="subpanel-body">',
       renderTerminalModes(module),
@@ -328,6 +339,8 @@
       output.textContent = terminalText;
       moduleUiState[activeModuleIndex].terminalOutput = terminalText;
       moduleUiState[activeModuleIndex].hasSubmitted = true;
+      moduleUiState[activeModuleIndex].lastRisky = Boolean(result.risky);
+      moduleUiState[activeModuleIndex].passed = !result.risky;
       renderFeedback(result);
       updateCurrentTask();
       renderStatusBar();
@@ -366,6 +379,13 @@
   function getCurrentTask(module) {
     var savedUi = moduleUiState[activeModuleIndex] || {};
     if (savedUi.hasSubmitted) {
+      if (savedUi.lastRisky) {
+        return {
+          step: "Revise",
+          copy: "Review the rubric and revise the response before moving forward.",
+          code: "LOCKED"
+        };
+      }
       return {
         step: "Advance",
         copy: "Review the rubric, revise if needed, or continue to the next mission phase.",
@@ -673,7 +693,8 @@
   function renderFeedbackActions(result) {
     var nextIndex = getNextModuleIndex();
     var nextLabel = modules[nextIndex] ? modules[nextIndex].title : "After Action Review";
-    var nextCopy = result.strong ? "Ready to continue. You can advance, or revise if you want a sharper response." : "Revise if you can close the gap, or advance to see how the tradeoff carries forward.";
+    var canAdvance = !result.risky && modules[nextIndex] && canAccessModule(nextIndex);
+    var nextCopy = result.risky ? "Revise this response before advancing. Close the risk noted above, then submit again." : result.strong ? "Ready to continue. You can advance, or revise if you want a sharper response." : "Good enough to continue. You can advance, or revise to make the response stronger.";
     var actions = [
       '<div class="feedback-actions">',
       '<div><strong>Improve:</strong> ' + escapeHtml(result.nextAction || result.nextConsideration || "Add one concrete verification step.") + "</div>",
@@ -682,7 +703,7 @@
       '<button type="button" class="button secondary small" data-learner-action="revise">Revise Response</button>'
     ];
 
-    if (modules[nextIndex]) {
+    if (canAdvance) {
       actions.push('<button type="button" class="button small" data-learner-action="advance" data-next-index="' + nextIndex + '">Advance: ' + escapeHtml(nextLabel) + "</button>");
     }
 
@@ -695,7 +716,20 @@
   }
 
   function isRecommendedNext(index) {
-    return Boolean(moduleUiState[activeModuleIndex] && moduleUiState[activeModuleIndex].hasSubmitted && index === activeModuleIndex + 1);
+    return Boolean(moduleUiState[activeModuleIndex] && moduleUiState[activeModuleIndex].passed && index === activeModuleIndex + 1 && canAccessModule(index));
+  }
+
+  function getNavigationCode(module, index, locked) {
+    if (index === activeModuleIndex) {
+      return "ACTIVE";
+    }
+    if (locked) {
+      return "LOCKED";
+    }
+    if (isRecommendedNext(index)) {
+      return "READY";
+    }
+    return getModuleCode(module, index);
   }
 
   function renderRubricList(label, items) {
@@ -938,10 +972,43 @@
   }
 
   function renderProgressTracker() {
-    return '<div class="progress-track" aria-label="Phase progress">' + modules.map(function (_module, index) {
-      var className = index === activeModuleIndex ? "active" : index < activeModuleIndex ? "done" : "";
+    return '<div class="progress-track" aria-label="Mission progress">' + modules.map(function (_module, index) {
+      var className = index === activeModuleIndex ? "active" : moduleUiState[index] && moduleUiState[index].passed ? "done" : isModuleLocked(index) ? "locked" : "";
       return '<span class="progress-step ' + className + '"></span>';
     }).join("") + "</div>";
+  }
+
+  function canAccessModule(index) {
+    var module = modules[index];
+    if (!module) {
+      return false;
+    }
+    if (module.isReference || index === activeModuleIndex) {
+      return true;
+    }
+    if (module.isAar) {
+      return Boolean(moduleUiState[4] && moduleUiState[4].passed);
+    }
+    if (index === 0) {
+      return true;
+    }
+    return isSequentiallyUnlocked(index);
+  }
+
+  function isSequentiallyUnlocked(index) {
+    for (var i = 0; i < index; i += 1) {
+      if (modules[i].isReference || modules[i].isAar) {
+        continue;
+      }
+      if (!moduleUiState[i] || !moduleUiState[i].passed) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function isModuleLocked(index) {
+    return !canAccessModule(index);
   }
 
   function renderHistory() {
@@ -1089,6 +1156,8 @@
       return {
         hasInvestigated: false,
         hasSubmitted: false,
+        lastRisky: false,
+        passed: false,
         terminalDraft: "",
         terminalOutput: "SYSTEM READY. TYPE HELP FOR AVAILABLE COMMANDS.",
         feedbackHtml: "Decision feedback will appear here after submission."

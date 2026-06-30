@@ -58,7 +58,7 @@ window.ZTT_MODULES = [
           trap: "Assuming a log query is authoritative just because the console returned structured text."
         },
         tracker: {
-          title: "Phase And Metrics",
+          title: "Mission Progress And Metrics",
           purpose: "Track how decisions affect trust, fatigue, continuity, and time.",
           action: "Watch the metrics after each submitted action. Use changes as feedback for the next phase.",
           good: "A strong learner notices tradeoffs, especially when manual controls improve trust but increase fatigue or mission impact.",
